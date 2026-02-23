@@ -1,0 +1,22 @@
+recipes-bsp
+  - Adds NXP-specific ATF, U-Boot, and BSP components for i.MX91/i.MX93/i.MX943/i.MX95.
+  - Includes board initialization scripts and device-tree overlays.
+
+recipes-core
+  - Provides core OS modifications required for i.MX9x initialization and boot.
+  - Adjusts systemd/service defaults for NXP-specific hardware behavior.
+
+recipes-example
+  - Contains an example recipe demonstrating NXP-specific application integration.
+
+recipes-kernel
+  - Integrates the NXP LTS kernel and applies SoC-specific patches.
+  - Adds device trees and kernel configuration fragments for i.MX9x.
+
+recipes-phosphor
+  - Adapts phosphor services including GPIO, console, power/state, and logging.
+  - Provides per-SoC and per-board configurations for OpenBMC platform services.
+
+recipes-support
+  - Adds support libraries and security components required for NXP platforms.
+  - Includes cryptographic and low-level utility modifications as needed.
