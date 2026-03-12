@@ -10,6 +10,7 @@ SECTION = "BSP"
 DEPENDS += "xxd-native"
 DEPENDS:append:mx8m-generic-bsp = " u-boot-mkimage-native dtc-native u-boot-mkeficapsule-native"
 DEPENDS:append:mx93-generic-bsp = " u-boot-mkimage-native dtc-native u-boot-mkeficapsule-native"
+DEPENDS:append:mx943-generic-bsp = " u-boot-mkimage-native dtc-native u-boot-mkeficapsule-native"
 DEPENDS:append:mx95-generic-bsp = " u-boot-mkeficapsule-native"
 # This package aggregates output deployed by other packages,
 # so set the appropriate dependencies
@@ -457,4 +458,4 @@ addtask deploy before do_build after do_compile
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 FILES:${PN} = "/boot"
 
-COMPATIBLE_MACHINE = "(evb-imx93|mx8-generic-bsp|mx9-generic-bsp)"
+COMPATIBLE_MACHINE = "(evb-imx93|evb-imx943|mx8-generic-bsp|mx9-generic-bsp)"

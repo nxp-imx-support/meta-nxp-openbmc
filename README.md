@@ -1,7 +1,7 @@
 NXP i.MX9x OpenBMC BSP Layer (`meta-nxp`)
 =========
 This is the NXP i.MX9x Board Support Package (BSP) layer for enabling
-OpenBMC on NXP i.MX 9X series SoCs, including i.MX93, i.MX95.
+OpenBMC on NXP i.MX 9X series SoCs, including i.MX93, i.MX943 & i.MX95.
 These SoCs are ARM-based platforms with external DDR and support
 a large set of peripherals of NXP.
 
@@ -23,6 +23,7 @@ This repository also includes NXP-specific sublayers:
 
 - `meta-common` (shared BSP content such as meta-imx-bsp)
 - `meta-imx93`
+- `meta-imx943`
 - `meta-imx95`
 
 ---
@@ -87,12 +88,14 @@ revision: HEAD
 This layer currently supports:
 
 - `evb-imx93`
+- `evb-imx943`
 - `evb-imx95`
 
 Each SoC family has its own sublayer with machine definition under:
 
 ```
 meta-nxp/meta-imx93/conf/machine
+meta-nxp/meta-imx943/conf/machine
 meta-nxp/meta-imx95/conf/machine
 ```
 
@@ -110,7 +113,7 @@ git checkout -b walnascar origin/walnascar
 Set-up build environment for selected machine:
 ```bash
 . setup evb-imx93
-# or evb-imx95
+# or evb-imx943 / evb-imx95
 ```
 
 Build the image:
@@ -130,6 +133,7 @@ Note: "wic" image will be available at "tmp/deploy/images/<board_name>" path.
 ```
 meta-common        Shared BSP code (kernel notes, meta-imx-bsp, licenses)
 meta-imx93         SoC-specific machine + recipes
+meta-imx943        SoC-specific machine + recipes
 meta-imx95         SoC-specific machine + recipes
 
 recipes-bsp        Bootloader, ATF, skiboot, low-level BSP
