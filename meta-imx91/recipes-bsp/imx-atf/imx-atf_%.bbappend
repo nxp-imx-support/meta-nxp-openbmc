@@ -1,0 +1,1 @@
+COMPATIBLE_MACHINE:evb-imx91 = ""
