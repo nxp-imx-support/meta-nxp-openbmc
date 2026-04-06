@@ -1,0 +1,554 @@
+NXP Software Content Register
+
+Release - meta-nxp for openbmc yocto release
+
+Outgoing License: LA_OPT_Online Code Hosting NXP_Software_License - v1.4 May 2025
+License File:     LICENSE.txt
+
+Release tag: openbmc-2.18-nxp-1.0
+Release Location: https://github.com/nxp-imx-support/meta-nxp-openbmc.git
+
+--------------------------------------------
+Changes for OPENBMC
+--------------------------------------------
+Patches for:               bmc-init
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            meta-imx9*/recipes-phosphor/bmc-init
+Outgoing License:          MIT
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  BMC initialization for i.MX9*
+Origin of patches:         NXP (MIT)
+
+--------------------------------------------
+Patches for:               imx-led-manager-config
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            meta-imx9*/recipes-phosphor/leds/
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  Phosphor LED Group Management for iMX9*
+Origin of patches:         NXP (Apache-2.0)
+
+--------------------------------------------
+Patches for:               imx-phosphor-logging-callouts-native
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            meta-imx9*/recipes-phosphor/logging/
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  iMX9x-Openbmc inventory map for phosphor-ipmi-host
+Origin of patches:         NXP (Apache-2.0)
+
+--------------------------------------------
+Patches for:               imx-occ-control-config-native
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            meta-imx9*/recipes-phosphor/occ
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  Palmetto OCC Control sensor IDs
+Origin of patches:         NXP (Apache-2.0)
+
+--------------------------------------------
+Patches for:               udev-rules-udisks-imx
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            recipes-core/udev
+Outgoing License:          MIT
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  add udisk/udev rule to hide boot partition from udev
+Origin of patches:         NXP (MIT)
+
+--------------------------------------------
+Patches for:               udev-rules-imx
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            recipes-core/udev
+Outgoing License:          MIT
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  udev rules for nxp imx Boards
+Origin of patches:         NXP (MIT)
+
+--------------------------------------------
+Patches for:               persistent-net-name
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            recipes-phosphor/network
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  udev rules for persistent net name
+Origin of patches:         NXP (Apache-2.0)
+
+--------------------------------------------
+Patches for:               id-button
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            recipes-phosphor/gpio
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  iMX9x ID Button pressed application
+Origin of patches:         NXP (Apache-2.0)
+
+--------------------------------------------
+Patches for:               host-reset
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            recipes-phosphor/dbus
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  host reset
+Origin of patches:         NXP (Apache-2.0)
+
+--------------------------------------------
+Patches for:               nxp-hostctrl
+Source Location:           https://github.com/openbmc/openbmc/tree/walnascar/meta-phosphor
+Patch Location:            recipes-phosphor/host
+Outgoing License:          Apache-2.0
+License File:              LICENSE
+Package Category:          BSP
+Description and comments:  A host control implementation suitable for nxp Computing LLC's systems
+Origin of patches:         NXP (Apache-2.0)
+--------------------------------------------
+
+--------------------------------------------
+BSP Packages
+--------------------------------------------
+
+Package:                     linux-imx.git
+Version:                     6.12
+Outgoing License:            GPL-2.0 WITH Linux-syscall-note 
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    The Linux kernel with i.MX-specific drivers
+Release Location:            https://github.com/nxp-imx/linux-imx -b lf-6.12.49-2.2.0
+Origin:                      NXP (GPL-2.0)
+                             kernel.org (GPL-2.0) - https://www.kernel.org/
+
+--------------------------------------------
+Package:                     uboot-imx.git
+Version:                     2025.04
+Outgoing License:            GPL-2.0 
+License File:                Licenses/gpl-2.0.txt
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Bootloader with i.MX-specific capabilities
+Release Location:            https://github.com/nxp-imx/uboot-imx -b lf-6.12.49-2.2.0
+Origin:                      NXP (GPL-2.0)
+                             Das U-Boot - Universal Bootloader (GPL-2.0) - http://www.denx.de/wiki/U-Boot/WebHome
+                             Android Open Source Project (BSD-2-Clause) - https://source.android.com/
+                             zlib (zlib license) - http://www.zlib.net/
+
+--------------------------------------------
+Package:                     imx-atf.git
+Version:                     2.12
+Outgoing License:            BSD-3-Clause 
+License File:                docs/license.rst
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    ARM Trusted Firmware
+Release Location:            https://github.com/nxp-imx/imx-atf -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-clause)
+                             arm-trusted-firmware - ARM Limited (BSD-3-clause) - http://github.com/ARM-software/arm-trusted-firmware/
+
+--------------------------------------------
+Package:                     imx-oei.git
+Version:                     1.0.0
+Outgoing License:            BSD-3-Clause 
+License File:                LICENSE.txt
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    i.MX BootROM Optional Execution Image
+Release Location:            https://github.com/nxp-imx/imx-oei -b lf-6.12.49-2.2.0
+Origin:                      NXP (GPL-2.0)
+                             Das U-Boot - Universal Bootloader (GPL-2.0) - http://www.denx.de/wiki/U-Boot/WebHome
+
+
+--------------------------------------------
+Package:                     imx-sm.git
+Version:                     1.0.0
+Outgoing License:            BSD-3-Clause 
+License File:                LICENSE.txt
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    i.MX System Manager
+Release Location:            https://github.com/nxp-imx/imx-sm -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-Clause)
+                             CMSIS_5 (Apache-2.0) - http://silver.arm.com
+                                IAR (Apache-2.0) in CMSIS
+                             cygwin (BSD-3-Clause) - https://sourceware.org/git/?p=newlib-cygwin.git;a=tree;h=refs/tags/cygwin-3_3_6-release
+
+--------------------------------------------
+Package:                     imx-sc-firmware-1.18.0-654907b.bin
+Version:                     1.18.0
+Outgoing License:            LA_OPT_NXP_Software_License v58 November 2024 Additional distribution license granted - Section 2.3 applies
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             binary
+Description and comments:    System Controller Firmware
+Release Location:            Mirror
+Origin:                      NXP (LA_OPT_NXP_Software_License)
+                             ARM CMSIS Library (BSD-3-clause) - https://silver.arm.com/
+
+--------------------------------------------
+Package:                     firmware-imx-8.28-994fa14.bin
+Version:                     8.28
+Outgoing License:            LA_OPT_NXP_Software_License v62 May 2025 Additional distribution license granted - Section 2.3 applies
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             binary
+Description and comments:    BSP firmware - DDR EPDC HDMI SDMA VPU
+Release Location:            Mirror
+Origin:                      NXP (LA_OPT_NXP_Software_License)
+
+                           In addition, these components contain code from the companies listed below.
+                             DDR:   origin: Synopsys DDR (LA_OPT_NXP_Software_License)
+                             EASRC: origin: NXP (LA_OPT_NXP_Software_License)
+                             EPDC:  origin: E Ink Corporation (LA_OPT_NXP_Software_License)
+                             HDMI:  origin: Cadence Design Systems, Inc. (LA_OPT_NXP_Software_License)
+                             SDMA:  origin: NXP (LA_OPT_NXP_Software_License)
+                             XCVR:  origin: NXP (LA_OPT_NXP_Software_License)
+                             XUVI:  origin: NXP (LA_OPT_NXP_Software_License)
+                             VPU:   vpu_fw_imx27_TO1.bin
+                                    vpu_fw_imx27_TO2.bin
+                                    vpu_fw_imx51.bin
+                                    vpu_fw_imx53.bin
+                                    vpu_fw_imx6d.bin
+                                    vpu_fw_imx6q.bin
+                                 origin: Chips & Media, Inc.  (LA_OPT_NXP_Software_License)
+
+                                    vpu_fw_imx8_dec.bin
+                                    vpu_fw_imx8_enc.bin
+                                 origin: Amphion Semiconductor Ltd  (LA_OPT_NXP_Software_License - see appendix)
+
+--------------------------------------------
+
+Package:                     firmware-ele-imx-2.0.2-89161a8.bin
+Version:                     2.0.2
+Outgoing License:            LA_OPT_NXP_Software_License v62 May 2025 Additional distribution license granted - Section 2.3 applies
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             binary
+Description and comments:    EdgeLock Enclave firmware
+Release Location:            Mirror
+Origin:                      NXP (proprietary)
+                             CMSIS header files (Apache License 2.0; https://github.com/ARM-software/CMSIS_5)
+
+--------------------------------------------
+
+Package:                     firmware-upower-1.3.1.bin
+Version:                     1.3.1
+Outgoing License:            LA_OPT_NXP_Software_License v48 July 2023 Additional distribution license granted - Section 2.3 applies
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             binary
+Description and comments:    uPower firmware
+Release Location:            Mirror
+Origin:                      NXP (LA_OPT_NXP_Software_License)
+
+--------------------------------------------
+
+Package:                     imx-mkimage.git
+Version:                     
+Outgoing License:            GPL-2.0 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Make Image BootLoader
+Release Location:            https://github.com/nxp-imx/imx-mkimage -b lf-6.12.49-2.2.0
+Origin:                      NXP (GPL-2.0)
+                             Das U-Boot - Universal Bootloader (GPL-2.0) - http://www.denx.de/wiki/U-Boot/WebHome
+
+--------------------------------------------
+
+Package:                     imx-lib.git
+Version:                     
+Outgoing License:            LGPL-2.1 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    BSP libraries
+Release Location:            https://github.com/nxp-imx/imx-lib -b lf-6.12.49-2.2.0
+Origin:                      NXP (LGPL-2.1)
+
+--------------------------------------------
+
+Package:                     imx-test.git
+Version:                     
+Outgoing License:            Each test has its own license. It is one of GPL-2.0 LGPL-2.1 or Apache-2.0
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Linux unit test applications
+Release Location:            https://github.com/nxp-imx/imx-test -b lf-6.12.49-2.2.0
+Origin:                      NXP (GPL-2.0)
+                             module_test: NXP (GPL-2.0+)
+                                  Hantro Products Oy. (GPL-2.0+)
+                             test/caam: NXP [instructions]
+                             test/can: NXP [instructions]
+                             test/etm: The Android Open Source Project (Apache-2.0) - unpublished
+                             test/gpu: NXP [instructions]
+                             test/memtool: NXP (GPL-2.0+)
+                             test/misc: NXP [instructions]
+                             test/mmdc: NXP (GPL-2.0+)
+                             test/mxc_als_test: NXP (GPL-2.0+)
+                             test/mxc_alsa_dsd_player: NXP (GPL-2.0+)
+                                  alsa-dsd-player by Daniel Mack (GPL-2.0+) - https://github.com/zonque/alsa-dsd-player
+                                  The Music Player Daemon Project (GPL-2.0+) - http://www.musicpd.org
+                             test/mxc_alsa_hw_params: NXP (GPL-2.0+)
+                             test/mxc_amix_test: NXP (GPL-2.0+)
+                             test/mxc_asrc_test: NXP (GPL-2.0+)
+                             test/mxc_cec_test: NXP (GPL-2.0+)
+                             test/mxc_clock_test: NXP [scripts and instructions]
+                             test/mxc_dcic_test: NXP (GPL-2.0+)
+                             test/mxc_dcp_test: NXP [instructions]
+                             test/mxc_dryice_test: NXP [scripts and instructions]
+                             test/mxc_dsp_test: NXP [MP3 file]
+                             test/mxc_esai_test: NXP [instructions]
+                             test/mxc_fb_test: NXP (GPL-2.0+)
+                             test/mxc_firi_test: NXP [scripts and instructions]
+                             test/mxc_hdd_test: NXP [scripts and instructions]
+                             test/mxc_i2c_slave_test: NXP (GPL-2.0+)
+                             test/mxc_iim_test: NXP (GPL-2.0+)
+                             test/mxc_ipudev_test: NXP (LGPL-2.1+)
+                             test/mxc_jpeg_test: NXP (GPL-2.0+)
+                             test/mxc_keyb_test: NXP [scripts and instructions]
+                             test/mxc_mcc_tty_test: NXP (GPL-2.0+)
+                             test/mxc_mlb_test: NXP (GPL-2.0+)
+                             test/mxc_mmc_test: NXP [scripts and instructions]
+                             test/mxc_oprofile_test: NXP [scripts and instructions]
+                             test/mxc_owire_test: NXP [scripts and instructions]
+                             test/mxc_pdm_test: NXP (GPL-2.0+)
+                             test/mxc_rtc: NXP (GPL-2.0+)
+                                  Paul Gortmaker (GPL-2.0+) - https://github.com/torvalds/linux/blob/master/tools/testing/selftests/timers/rtctest.c
+                             test/mxc_sdma_test: NXP (GPL-2.0+)
+                             test/mxc_secureboot: NXP [scripts and instructions]
+                             test/mxc_sensor_test: Vojtech Pavlik (GPL-2.0+)
+                             test/mxc_sim_test: NXP (GPL-2.0+)
+                             test/mxc_spdif_test: NXP [instructions]
+                             test/mxc_spi_test: NXP (GPL-2.0+)
+                             test/mxc_ssi_test: NXP [instructions]
+                             test/mxc_tuner_test: NXP (GPL-2.0+)
+                             test/mxc_uart_test: NXP (GPL-2.0+)
+                             test/mxc_usb_test: NXP [scripts and instructions]
+                             test/mxc_v4l2_test: NXP (GPL-2.0+)
+                             test/mxc_v4l2_vpu_test: NXP (GPL-2.0+)
+                             test/mxc_vpu_test: NXP (GPL-2.0+)
+                                  Chips & Media (GPL-2.0+)
+                             test/pm: NXP [Instructions]
+                             test/pxp_lib_test: NXP (GPL-2.0+)
+                             test/pxp_v4l2_test: NXP (GPL-2.0+)
+                                  Embedded Alley Solutions (GPL-2.0+)
+                             test/rpmsg: NXP (GPL-2.0+)
+                             test/wdog: NXP (GPL-2.0+)
+
+--------------------------------------------
+
+Package:                     imx-uuc.git
+Version:                     
+Outgoing License:            GPL-2.0 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    A daemon for mfgtools.
+Release Location:            https://github.com/nxp-imx/imx-uuc -b master
+Origin:                      NXP (GPL-2.0)
+
+--------------------------------------------
+
+Package:                     crypto-af-alg.git
+Version:                     
+Outgoing License:            BSD-3-Clause Additional distribution license granted - Section 2.3 applies
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    NXP i.MX crypto af alg tool to perform symmetric operation
+Release Location:            https://github.com/nxp-imx/crypto_af_alg.git -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-Clause)
+
+--------------------------------------------
+
+Package:                     imx-seco-5.9.4.1-0333596.bin
+Version:                     5.9.4.1
+Outgoing License:            LA_OPT_NXP_Software_License v57 July 2024 Additional distribution license granted - Section 2.3 applies
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             binary
+Description and comments:    BSP firmware - SECO
+Release Location:            Mirror
+Origin:                      NXP (LA_OPT_NXP_Software_License)
+
+--------------------------------------------
+
+
+Package:                     simg2img.git
+Version:                     
+Outgoing License:            Apache-2.0 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Tool to convert Android sparse images to raw images
+Release Location:            https://github.com/nxp-imx/simg2img -b master
+Origin:                      NXP (Apache-2.0)
+                             The Android Open Source Project (Apache-2.0) - https://android.googlesource.com/platform/system/core/+/master/libsparse
+                             Gary S Brown (Public Domain) - http://www.opensource.apple.com/source/xnu/xnu-1456.1.26/bsd/libkern/crc32.c?txt
+
+--------------------------------------------
+Package:                     imx-optee-client.git
+Version:                     4.2.0.imx
+Outgoing License:            BSD-2-Clause 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Open Portable Trusted Execution Environment for TEE Client library
+Release Location:            https://github.com/nxp-imx/imx-optee-client -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-2-Clause)
+                             optee_client (BSD-2-Clause) - https://github.com/OP-TEE/optee_client
+
+--------------------------------------------
+
+Package:                     imx-optee-os.git
+Version:                     4.2.0.imx
+Outgoing License:            BSD-2-Clause 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Open Portable Trusted Execution Environment for Linux on ARM
+Release Location:            https://github.com/nxp-imx/imx-optee-os -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-2-Clause)
+                             OP-TEE Trusted OS (BSD-2-Clause) - https://github.com/OP-TEE/optee_os
+                             Mbed TLS (Apache-2.0) - https://github.com/ARMmbed/mbedtls/ 
+
+--------------------------------------------
+
+Package:                     imx-optee-test.git
+Version:                     4.2.0.imx
+Outgoing License:            BSD-2-Clause (ta/) and GPL-2.0 (host/) 
+License File:                LICENSE.md
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Open Portable Trusted Execution Environment sanity tests
+Release Location:            https://github.com/nxp-imx/imx-optee-test -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-2-Clause) (We are not using /host)
+                             optee_test/ta (BSD-2-Clause) - https://github.com/OP-TEE/optee_test
+                             optee_test/host (GPL-2.0) - https://github.com/OP-TEE/optee_test
+
+
+--------------------------------------------
+Package:                     imx-qemu.git
+Version:                     8.2.2.imx
+Outgoing License:            GPL-2.0 
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    A Virtual Machine Monitor
+Release Location:            https://github.com/nxp-imx/imx-qemu -b lf-6.12.49-2.2.0
+Origin:                      NXP (GPL-2.0)
+                             qemu (GPL-2.0) - https://download.qemu.org/qemu-9.0.0.tar.xz
+
+--------------------------------------------
+Package:                     imx-secure-enclave.git
+Version:                     
+Outgoing License:            BSD-3-Clause Additional distribution license granted - Section 2.3 applies
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    i.MX secure enclave library
+Release Location:            https://github.com/NXP/imx-secure-enclave.git -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-Clause)
+
+--------------------------------------------
+
+Package:                     imx-smw.git
+Version:                     git
+Outgoing License:            BSD-3-Clause 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    NXP i.MX Security Middleware Library
+Release Location:            https://github.com/nxp-imx/imx-smw -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-Clause)
+                             PSA API (BSD-3-Clause) - https://sourceforge.net/projects/psa-api/
+                             mbed-TLS (Apache-2.0) - https://github.com/Mbed-TLS/mbedtls
+                             pks11 (MIT) - https://github.com/Roostify/pkcs11
+                             
+
+--------------------------------------------
+
+Package:                     itest.git
+Version:                     
+Outgoing License:            BSD-3-Clause 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Tools to test EdgeLock Enclave api bridge on the ele_libs layer
+Release Location:            https://github.com/nxp-imx/itest -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-Clause)
+
+--------------------------------------------
+
+Package:                     pkcs11-provider.git
+Version:                     1.0.imx
+Outgoing License:            Apache-2.0 
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    i.MX fork of an OpenSSL provider that allows direct interfacing with pkcs11 drivers
+Release Location:            https://github.com/nxp-imx/pkcs11-provider.git -b lf-6.12.49-2.2.0
+Origin:                   Latchset (Apache-2.0) - https://github.com/latchset/pkcs11-provider
+
+--------------------------------------------
+
+Package:                     plug-and-trust.git
+Version:                     4.5.3
+Outgoing License:            BSD-3-Clause 
+License File:                LICENSE.txt
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    Plug & Trust ECC example for SE050
+Release Location:            https://github.com/NXP/plug-and-trust -b master
+Origin:                      NXP (Apache-2.0)
+                             Mbed-TLS (Apache-2.0) - https://github.com/Mbed-TLS/mbedtls
+                             OpenSSL 1.1 (OpenSSL License) - https://github.com/openssl/openssl/tree/OpenSSL_1_1_1-stable
+--------------------------------------------
+
+Package:                     ecdsa-lib-imx-3.3.4-dd6eac8.bin
+Version:                     3.3.4
+Outgoing License:            LA_OPT_NXP_Software_License v58 November 2024 Additional distribution license granted - Section 2.3 applies
+License File:                COPYING
+Package Category:            BSP
+Type of Content:             binary
+Description and comments:    2X signature verification library
+Release Location:            Mirror
+Origin:                      NXP (LA_OPT_NXP_Software_License)
+                             trace - NXP (BSD-3-clause)
+
+--------------------------------------------
+
+Package:                     v2xsehsm.git
+Version:                     
+Outgoing License:            BSD-3-Clause 
+License File:                LICENSE
+Package Category:            BSP
+Type of Content:             source
+Description and comments:    V2X Secure Element library
+Release Location:            https://github.com/nxp-imx/v2xsehsm -b lf-6.12.49-2.2.0
+Origin:                      NXP (BSD-3-Clause)
+
+--------------------------------------------
+--------------------------------------------
+PATCHES IN META_IMX
+--------------------------------------------
+
+Patches for:               systemd
+Source Location:           https://github.com/systemd/systemd-bootchart.git
+Patch Location:            meta-imx-bsp/recipes-core/systemd/systemd
+Outgoing License:          GPL-2.0
+License File:              LICENSE.GPL2
+Package Category:          BSP
+Description and comments:  System and Service Manager
+Origin of patches:         NXP (GPL-2.0)
+
+--------------------------------------------
+

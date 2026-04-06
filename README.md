@@ -1,6 +1,6 @@
 NXP i.MX9x OpenBMC BSP Layer (`meta-nxp`)
 =========
-This is the NXP i.MX9x Board Support Package (BSP) layer for enabling
+This is the NXP i.MX9x Board Support Package (BSP) Yocto layer for enabling
 OpenBMC on NXP i.MX 9X series SoCs, including i.MX91, i.MX93, i.MX943 & i.MX95.
 These SoCs are ARM-based platforms with external DDR and support
 a large set of peripherals of NXP.
@@ -12,12 +12,17 @@ More information about the NXP IMX 9 Application Processors can be found at:
 
 ## 1. Layer Dependencies
 
+This layer is applicable for OpenBMC github project: 
+
+- `https://github.com/openbmc/openbmc`
+
 This layer depends on the following OpenBMC/Yocto layers:
 
 - `meta`
 - `meta-phosphor`
 - `meta-openembedded` (meta-oe, meta-networking, meta-python)
 - `meta-security`
+
 
 This repository also includes NXP-specific sublayers:
 
@@ -111,7 +116,10 @@ Get the Yocto Source Code:
 git clone https://github.com/openbmc/openbmc.git
 cd openbmc
 git checkout -b walnascar origin/walnascar
+git clone https://github.com/nxp-imx-support/meta-nxp-openbmc.git meta-nxp
+
 ```
+
 
 Set-up build environment for selected machine:
 ```bash
@@ -153,8 +161,3 @@ wic                WIC image layout per SoC
 For detailed per-directory modifications, see `recipes.txt`.
 
 ---
-
-## License
-
-This layer is provided under MIT and Apache 2.0 licenses as included with the
-source tree.
