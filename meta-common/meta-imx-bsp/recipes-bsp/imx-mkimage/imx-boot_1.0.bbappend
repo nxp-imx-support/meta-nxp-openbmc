@@ -77,52 +77,24 @@ do_deploy:append() {
     esac
 }
 
-# Ensure flash.bin is staged where do_deploy (or inherited classes) expect it
 do_install:append() {
-    # Staging directory used by some deploy hooks
     install -d ${WORKDIR}/deploy-imx-boot
+    FLASH=$(find ${S} -maxdepth 3 -name flash.bin | head -n 1)
 
-    # Find the built flash.bin from common locations and stage it
-    if [ -f ${S}/iMX93/flash.bin ]; then
-        install -m 0644 ${S}/iMX93/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    elif [ -f ${B}/iMX93/flash.bin ]; then
-        install -m 0644 ${B}/iMX93/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    elif [ -f ${S}/flash.bin ]; then
-        install -m 0644 ${S}/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    elif [ -f ${B}/flash.bin ]; then
-        install -m 0644 ${B}/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    else
-        bbfatal "imx-boot: flash.bin not found under expected locations"
-    fi
+    [ -z "$FLASH" ] && bbfatal "flash.bin not found for ${SOC_FAMILY}"
+    install -m 0644 "$FLASH" ${WORKDIR}/deploy-imx-boot/flash.bin
 
-    # (Optional safety) Also ensure BOOT_STAGING has flash.bin if missing
-    if [ ! -f ${BOOT_STAGING}/flash.bin ]; then
-        install -d ${BOOT_STAGING}
-        install -m 0644 ${WORKDIR}/deploy-imx-boot/flash.bin ${BOOT_STAGING}/flash.bin
-    fi
+    install -d ${BOOT_STAGING}
+    install -m 0644 ${WORKDIR}/deploy-imx-boot/flash.bin ${BOOT_STAGING}/flash.bin
 }
 
-# Ensure flash.bin is staged before any deploy hooks run
 do_deploy:prepend() {
-    # Create the staging directory that deploy hooks expect
     install -d ${WORKDIR}/deploy-imx-boot
+    FLASH=$(find ${S} -maxdepth 3 -name flash.bin | head -n 1)
 
-    # Put the built flash.bin where the hook expects it
-    if [ -f ${S}/iMX93/flash.bin ]; then
-        install -m 0644 ${S}/iMX93/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    elif [ -f ${B}/iMX93/flash.bin ]; then
-        install -m 0644 ${B}/iMX93/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    elif [ -f ${S}/flash.bin ]; then
-        install -m 0644 ${S}/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    elif [ -f ${B}/flash.bin ]; then
-        install -m 0644 ${B}/flash.bin ${WORKDIR}/deploy-imx-boot/flash.bin
-    else
-        bbfatal "imx-boot: flash.bin not found under expected locations (S/B; with/without iMX93/)."
-    fi
+    [ -z "$FLASH" ] && bbfatal "flash.bin not found for ${SOC_FAMILY}"
+    install -m 0644 "$FLASH" ${WORKDIR}/deploy-imx-boot/flash.bin
 
-    # Optional: also keep BOOT_STAGING in sync (used by deploy_* helpers)
-    if [ ! -f ${BOOT_STAGING}/flash.bin ]; then
-        install -d ${BOOT_STAGING}
-        install -m 0644 ${WORKDIR}/deploy-imx-boot/flash.bin ${BOOT_STAGING}/flash.bin
-    fi
+    install -d ${DEPLOYDIR}
+    install -m 0644 ${WORKDIR}/deploy-imx-boot/flash.bin ${DEPLOYDIR}/imx-boot-${MACHINE}.bin
 }
