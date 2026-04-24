@@ -1,0 +1,2 @@
+ACTION=="add", KERNEL=="nbd0", RUN+="/usr/bin/usb_nbd_rebind.sh"
+
