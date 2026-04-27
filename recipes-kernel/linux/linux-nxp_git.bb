@@ -17,6 +17,9 @@ KMETA = "kernel-meta"
 SRC_URI = " \
     ${KERNEL_SRC} \
     git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=${LINUX_RPI_KMETA_BRANCH};destsuffix=${KMETA} \
+    file://0001-usb-Add-base-USB-MCTP-definitions.patch \
+    file://0002-net-mctp-Add-MCTP-USB-transport-driver.patch \
+    file://0003-net-mctp-Expose-transport-binding-identifier-via-IFL.patch \
     "
 
 require linux-nxp.inc
