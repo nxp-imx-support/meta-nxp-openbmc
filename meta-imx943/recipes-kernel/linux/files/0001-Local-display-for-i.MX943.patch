@@ -1,0 +1,168 @@
+From 196db4277bb6c0e9558146793ee4fc4da4b11d47 Mon Sep 17 00:00:00 2001
+From: Arpit Goel <arpit.goel_2@nxp.com>
+Date: Mon, 4 May 2026 15:43:14 +0530
+Subject: [PATCH] Local display for i.MX943
+
+Upstream-Status: Pending
+Signed-off-by: Arpit Goel <arpit.goel_2@nxp.com>
+---
+ .../dts/freescale/imx943-evk-pcie1-ep.dtso    |  1 +
+ arch/arm64/boot/dts/freescale/imx943-evk.dts  |  7 +++
+ drivers/gpu/drm/imx/dcif/dcif-drv.c           | 50 ++++++++++++++++++-
+ drivers/gpu/drm/imx/dcif/dcif-drv.h           |  6 +++
+ 4 files changed, 63 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx943-evk-pcie1-ep.dtso b/arch/arm64/boot/dts/freescale/imx943-evk-pcie1-ep.dtso
+index 6f358a6ab8e6..60717aa83fe7 100644
+--- a/arch/arm64/boot/dts/freescale/imx943-evk-pcie1-ep.dtso
++++ b/arch/arm64/boot/dts/freescale/imx943-evk-pcie1-ep.dtso
+@@ -14,4 +14,5 @@ &pcie1_ep {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_pcie1>;
+ 	status = "okay";
++  ext-refclk;
+ };
+diff --git a/arch/arm64/boot/dts/freescale/imx943-evk.dts b/arch/arm64/boot/dts/freescale/imx943-evk.dts
+index b69b75c415ae..c0e66251072b 100644
+--- a/arch/arm64/boot/dts/freescale/imx943-evk.dts
++++ b/arch/arm64/boot/dts/freescale/imx943-evk.dts
+@@ -208,6 +208,12 @@ cm33s_vdevbuffer: vdevbuffer@20820000 {
+ 			no-map;
+ 		};
+ 
++		vram: vram@94000000 {
++			compatible = "shared-dma-pool";
++			reg = <0 0x94000000 0 0x04000000>; /* 64MB */
++			no-map;
++		};
++
+ 		ele_reserved: ele-reserved@a4120000 {
+ 			compatible = "shared-dma-pool";
+ 			reg = <0 0xa4120000 0 0x100000>;
+@@ -383,6 +389,7 @@ &adc1 {
+ };
+ 
+ &dcif {
++  memory-region = <&vram>;
+ 	status = "okay";
+ };
+ 
+diff --git a/drivers/gpu/drm/imx/dcif/dcif-drv.c b/drivers/gpu/drm/imx/dcif/dcif-drv.c
+index 2cccd7f7be83..683d07b3802c 100644
+--- a/drivers/gpu/drm/imx/dcif/dcif-drv.c
++++ b/drivers/gpu/drm/imx/dcif/dcif-drv.c
+@@ -10,6 +10,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
++#include <linux/of_reserved_mem.h>
++#include <linux/dma-mapping.h>
+ 
+ #include <drm/drm_atomic_helper.h>
+ #include <drm/drm_drv.h>
+@@ -33,11 +35,46 @@
+ 
+ #define DRIVER_NAME			"imx-dcif-drm"
+ 
++#define DRM_IMX_DPU_GET_DMA_ADDRESS    0x44
++
++#define DRM_IOCTL_IMX_DPU_GET_DMA_ADDRESS \
++	DRM_IOWR(DRM_IMX_DPU_GET_DMA_ADDRESS, \
++			struct drm_imx_dpu_get_dma_address)
++
+ static int legacyfb_depth = 32;
+ module_param(legacyfb_depth, uint, 0444);
+ 
+ DEFINE_DRM_GEM_DMA_FOPS(dcif_driver_fops);
+ 
++static int imx_drm_dcif_get_dma_ioctl(struct drm_device *dev,
++					void *data,
++					struct drm_file *file)
++{
++	struct drm_imx_dpu_get_dma_address *args = data;
++	struct drm_gem_object *obj;
++	struct drm_gem_dma_object *dma_obj;
++
++	obj = drm_gem_object_lookup(file, args->handle);
++	if (!obj)
++		return -ENOENT;
++
++	dma_obj = to_drm_gem_dma_obj(obj);
++
++	args->dma_addr = dma_obj->dma_addr;
++
++	pr_info("DCIF DMA ADDR = 0x%016llX\n",
++		(unsigned long long)dma_obj->dma_addr);
++
++	drm_gem_object_put(obj);
++
++	return 0;
++}
++
++static const struct drm_ioctl_desc dcif_ioctls[] = {
++	DRM_IOCTL_DEF_DRV(IMX_DPU_GET_DMA_ADDRESS, imx_drm_dcif_get_dma_ioctl,
++			  DRM_RENDER_ALLOW),
++};
++
+ static struct drm_driver dcif_driver = {
+ 	.driver_features	= DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
+ 	DRM_GEM_DMA_DRIVER_OPS,
+@@ -48,6 +85,8 @@ static struct drm_driver dcif_driver = {
+ 	.major			= 1,
+ 	.minor			= 0,
+ 	.patchlevel		= 0,
++	.ioctls			= dcif_ioctls,
++	.num_ioctls		= ARRAY_SIZE(dcif_ioctls),
+ };
+ 
+ static int dcif_set_qos(struct dcif_dev *dcif)
+@@ -101,11 +140,20 @@ static const char * const dcif_clks[] = {
+ static int dcif_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
++	struct device *dev = &pdev->dev;
+ 	struct dcif_dev *dcif;
+ 	struct drm_device *drm;
+ 	int ret;
+ 	int i;
+ 
++  ret = of_reserved_mem_device_init(dev);
++    if (ret)
++        dev_warn(dev, "No reserved memory, using CMA\n");
++    else
++        dev_info(dev, "Reserved VRAM attached\n");
++
++    dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
++
+ 	if (!pdev->dev.of_node)
+ 		return -ENODEV;
+ 
+@@ -191,7 +239,7 @@ static int dcif_probe(struct platform_device *pdev)
+ 		legacyfb_depth = 32;
+ 	}
+ 
+-	drm_fbdev_dma_setup(drm, legacyfb_depth);
++	//drm_fbdev_dma_setup(drm, legacyfb_depth);
+ 
+ 	return 0;
+ 
+diff --git a/drivers/gpu/drm/imx/dcif/dcif-drv.h b/drivers/gpu/drm/imx/dcif/dcif-drv.h
+index 62a781afcacc..4624e36dc0cd 100644
+--- a/drivers/gpu/drm/imx/dcif/dcif-drv.h
++++ b/drivers/gpu/drm/imx/dcif/dcif-drv.h
+@@ -64,6 +64,12 @@ struct dcif_crtc_state {
+ 	u32			bus_flags;
+ };
+ 
++struct drm_imx_dpu_get_dma_address {
++	u32 handle;
++	u32 pad;
++	u64 dma_addr;
++};
++
+ static inline struct dcif_dev *to_dcif_dev(struct drm_device *drm_dev)
+ {
+ 	return container_of(drm_dev, struct dcif_dev, drm);
+-- 
+2.25.1
+

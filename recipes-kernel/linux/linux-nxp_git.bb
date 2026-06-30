@@ -25,3 +25,10 @@ SRC_URI = " \
 require linux-nxp.inc
 
 KERNEL_DTC_FLAGS += "-@ -H epapr"
+
+IKVM_PCIE_EP_PATCHES = " \
+            file://0004-iKVM-PCIe-EP-local-display-and-remote-KVM-support-fo.patch \
+ "
+
+SRC_URI:append:mx95 = " ${IKVM_PCIE_EP_PATCHES}"
+SRC_URI:append:mx943  = " ${IKVM_PCIE_EP_PATCHES}"
