@@ -23,6 +23,20 @@ require linux-nxp.inc
 
 KERNEL_DTC_FLAGS += "-@ -H epapr"
 
+# Use NXP upstream defconfig as base - OpenBMC delta applied via cfg fragments
+KBUILD_DEFCONFIG = "imx_v8_defconfig"
+KCONFIG_MODE = "--alldefconfig"
+
+# --- Common OpenBMC kernel config fragment (all iMX9x platforms) ---
+# Enables: MCTP, I2C_MUX, IMX_THERMAL, PINCTRL_IMX, WATCHDOG
+# Disables: SQUASHFS_LZO (not needed for BMC)
+OPENBMC_COMMON_CFG = "file://openbmc_common.cfg"
+
+# --- iMX943/iMX95 additional config (not needed for iMX91/93) ---
+# Enables: iKVM, DRM/DPU95, extra peripherals
+# Disables: Layerscape/DPAA2 (not iMX9x SoCs), DVB tuners (not BMC)
+OPENBMC_IMX943_IMX95_CFG = "file://openbmc_imx943_imx95.cfg"
+
 # imx91 / imx93 common patches
 IMX91_IMX93_PATCHES = " \
     file://0005-openbmc-imx91-imx93-support.patch \
@@ -51,12 +65,13 @@ IKVM_PCIE_EP_PATCHES = " \
     file://0004-ikvm-pcie-ep-local-display-remote-kvm-imx95-6.18.patch \
 "
 
-SRC_URI:append:evb-imx91     = " ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx93     = " ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx943    = " ${IMX943_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx943-am = " ${IMX943_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx95     = " ${IMX95_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx95-evk = " ${IMX95_PATCHES} ${BSP_FIXES}"
+# Apply common cfg + per-platform patches via MACHINE override
+SRC_URI:append:evb-imx91     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
+SRC_URI:append:evb-imx93     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
+SRC_URI:append:evb-imx943    = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX943_PATCHES} ${BSP_FIXES}"
+SRC_URI:append:evb-imx943-am = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX943_PATCHES} ${BSP_FIXES}"
+SRC_URI:append:evb-imx95     = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX95_PATCHES} ${BSP_FIXES}"
+SRC_URI:append:evb-imx95-evk = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX95_PATCHES} ${BSP_FIXES}"
 
 SRC_URI:append:mx943-nxp-bsp = " ${IKVM_PCIE_EP_PATCHES}"
 SRC_URI:append:mx95-nxp-bsp  = " ${IKVM_PCIE_EP_PATCHES}"
