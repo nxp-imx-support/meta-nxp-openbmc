@@ -9,7 +9,7 @@ IMX_PACKAGE_VERSION = "${PV}"
 SRC_URI = "${NXP_BASE_URL}/${IMX_PACKAGE_NAME}.bin;fsl-eula=true"
 NXP_BASE_URL ??= "${FSL_MIRROR}"
 
-S = "${WORKDIR}/${IMX_PACKAGE_NAME}"
+S = "${UNPACKDIR}/${IMX_PACKAGE_NAME}"
 
 # For native apps, insert the user-local sysroot path
 # For nativesdk apps, insert the correct distro folder
@@ -34,8 +34,9 @@ do_install () {
     rm ${D}${D_SUBDIR}/${SCR}
     rm -f ${D}${D_SUBDIR}/${SBOM}
 
-    # Adjust for multilib and usrmerge
-    # FIXME: This does not handle nonarch_base_libdir
+    # Adjust for multilib and usrmerge.
+    # This recipe is only intended for platforms where nonarch_base_libdir
+    # is identical to base_libdir.
     if [ -d "${D}/lib" ] && [ "/lib" != "${base_libdir}" ]; then
         install -d ${D}${base_libdir}
         mv ${D}/lib/* ${D}${base_libdir}

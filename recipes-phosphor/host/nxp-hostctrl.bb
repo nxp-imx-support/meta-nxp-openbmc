@@ -20,11 +20,18 @@ SRC_URI = " \
            file://poweron.sh \
           "
 
+FILES:${PN} += " \
+    ${systemd_system_unitdir}/host-poweron@.service \
+    ${systemd_system_unitdir}/host-poweroff@.service \
+    ${systemd_system_unitdir}/nxp-host-force-reset@.service \
+"
+
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} = " host-poweron@.service \
                         host-poweroff@.service \
                          nxp-host-force-reset@.service \
                         "
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 # append force reboot
 HOST_WARM_REBOOT_FORCE_TGT = "nxp-host-force-reset@.service"
@@ -48,9 +55,18 @@ HOST_POWER_OFF_HOSTFMT = "../${HOST_POWER_OFF_HOSTTMPL}:${HOST_POWER_OFF_HOSTTGT
 SYSTEMD_LINK:${PN} += "${@compose_list_zip(d, 'HOST_POWER_OFF_HOSTFMT', 'OBMC_HOST_INSTANCES')}"
 SYSTEMD_SERVICE:${PN} += "${HOST_POWER_OFF_HOSTTMPL}"
 do_install() {
-    install -d ${D}/usr/sbin
+    install -d ${D}${sbindir}
+    install -d ${D}${systemd_system_unitdir}
     install -m 0755 ${UNPACKDIR}/nxp_host_check.sh ${D}/${sbindir}/
     install -m 0755 ${UNPACKDIR}/poweron.sh ${D}/${sbindir}/
     install -m 0755 ${UNPACKDIR}/poweroff.sh ${D}/${sbindir}/
     install -m 0755 ${UNPACKDIR}/host_reboot.sh ${D}/${sbindir}/
+   install -m 0644 ${UNPACKDIR}/host-poweron@.service ${D}${systemd_system_unitdir}/
+    install -m 0644 ${UNPACKDIR}/host-poweroff@.service ${D}${systemd_system_unitdir}/
+    install -m 0644 ${UNPACKDIR}/nxp-host-force-reset@.service ${D}${systemd_system_unitdir}/
 }
+
+pkg_postinst:${PN}() {
+    exit 0
+}
+

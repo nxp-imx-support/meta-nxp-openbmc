@@ -11,6 +11,6 @@ SRC_URI = "${FSL_MIRROR}/firmware-imx-${PV}-${IMX_SRCREV_ABBREV}.bin;fsl-eula=tr
 IMX_SRCREV_ABBREV = "8741a3b"
 SRC_URI[sha256sum] = "5be89eb8162c84eb45121192e69b73079a466ee6cabdabf3d874188fed60bb85"
 
-S = "${WORKDIR}/firmware-imx-${PV}-${IMX_SRCREV_ABBREV}"
+S = "${UNPACKDIR}/${BP}-${IMX_SRCREV_ABBREV}"
 
 inherit fsl-eula-unpack

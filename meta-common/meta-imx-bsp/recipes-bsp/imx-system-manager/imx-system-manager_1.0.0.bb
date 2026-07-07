@@ -15,9 +15,7 @@ SRC_URI = "${IMX_SYSTEM_MANAGER_SRC};branch=${SRCBRANCH} \
           file://0001-bmc-uart12-allocate-linux-ap-ns-domain.patch;striplevel=1"
 IMX_SYSTEM_MANAGER_SRC ?= "git://github.com/nxp-imx/imx-sm.git;protocol=https"
 SRCBRANCH = "master"
-SRCREV = "de30901b287e5c9a1e467d2d9a497b97bb6f7939"
-
-S = "${WORKDIR}/git"
+SRCREV = "c450f53974ea1df826970ad399cb338625b5638d"
 
 require imx-system-manager.inc
 

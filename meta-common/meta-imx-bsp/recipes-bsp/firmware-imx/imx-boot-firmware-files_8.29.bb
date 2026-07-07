@@ -6,31 +6,14 @@ require firmware-imx-${PV}.inc
 
 inherit deploy nopackages
 
+IMX_SRCREV_ABBREV = "8741a3b"
+
+S = "${UNPACKDIR}/../firmware-imx-${PV}-${IMX_SRCREV_ABBREV}"
+
 do_install[noexec] = "1"
 
 DEPLOY_FOR                  = ""
-DEPLOY_FOR:mx8-generic-bsp  = "mx8"
-DEPLOY_FOR:mx8m-generic-bsp = "mx8m"
 DEPLOY_FOR:mx9-generic-bsp  = "mx9"
-
-deploy_for_mx8() {
-    # Cadence HDMI
-    install -m 0644 ${S}/firmware/hdmi/cadence/hdmitxfw.bin ${DEPLOYDIR}
-    install -m 0644 ${S}/firmware/hdmi/cadence/hdmirxfw.bin ${DEPLOYDIR}
-    install -m 0644 ${S}/firmware/hdmi/cadence/dpfw.bin ${DEPLOYDIR}
-}
-
-deploy_for_mx8m() {
-    # Synopsys DDR
-    for ddr_firmware in ${DDR_FIRMWARE_NAME}; do
-        install -m 0644 ${S}/firmware/ddr/synopsys/${ddr_firmware} ${DEPLOYDIR}
-    done
-
-    # Cadence DP and HDMI
-    install -m 0644 ${S}/firmware/hdmi/cadence/signed_dp_imx8m.bin ${DEPLOYDIR}
-    install -m 0644 ${S}/firmware/hdmi/cadence/signed_hdmi_imx8m.bin ${DEPLOYDIR}
-}
-
 
 deploy_for_mx9() {
     # Synopsys DDR

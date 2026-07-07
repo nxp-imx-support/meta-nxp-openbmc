@@ -21,7 +21,7 @@ SOC:mx8qxp-nxp-bsp  = "imx8qx"
 SOC:mx8dx-nxp-bsp   = "imx8qx"
 SOC:mx8ulp-nxp-bsp  = "imx8ulp"
 SOC:mx93-nxp-bsp    = "imx93"
-SOC:mx94-nxp-bsp    = "imx943"
+SOC:mx943-nxp-bsp   = "imx943"
 SOC:mx95-nxp-bsp    = "imx95"
 
 MCORE_TYPE  ?= "m4"

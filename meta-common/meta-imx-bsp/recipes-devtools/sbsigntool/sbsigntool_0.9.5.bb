@@ -9,8 +9,8 @@ LIC_FILES_CHKSUM = "\
 DEPENDS = "binutils openssl gnu-efi util-linux-libuuid"
 
 SRC_URI = " \
-    git://git.kernel.org/pub/scm/linux/kernel/git/jejb/sbsigntools.git;protocol=https;name=sbsigntools;branch=master \
-    git://github.com/rustyrussell/ccan.git;protocol=https;destsuffix=git/lib/ccan.git;name=ccan;branch=master \
+    git://git.kernel.org/pub/scm/linux/kernel/git/jejb/sbsigntools.git;protocol=https;branch=master;name=sbsigntools \
+    git://github.com/rustyrussell/ccan.git;protocol=https;branch=master;name=ccan;subdir=${BP}/lib/ccan.git \
     file://0001-configure-Dont-t-check-for-gnu-efi.patch \
     file://0002-docs-Don-t-build-man-pages.patch \
     file://0003-sbsign-add-x-option-to-avoid-overwrite-existing-sign.patch  \
@@ -18,7 +18,6 @@ SRC_URI = " \
     file://0005-fileio.c-initialize-local-variables-before-use-in-fu.patch \
     file://0006-Makefile.am-do-not-use-Werror.patch \
 "
-S = "${UNPACKDIR}/git"
 
 SRCREV_sbsigntools  ?= "9cfca9fe7aa7a8e29b92fe33ce8433e212c9a8ba"
 SRCREV_ccan         ?= "b1f28e17227f2320d07fe052a8a48942fe17caa5"

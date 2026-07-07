@@ -67,14 +67,14 @@
             "Type": "TMP112"
         }
     ],
-    "Name": "NXP iMX93FRDM_BMC Chassis",
+    "Name": "NXP iMX943EVK_BMC Chassis",
     "Probe": "TRUE",
     "Type": "Board",
     "ProductId": "1",
     "xyz.openbmc_project.Inventory.Decorator.Asset": {
         "Manufacturer": "NXP",
-        "Model": "i.MX93FRDM",
+        "Model": "i.MX943EVK",
         "PartNumber": "109-H43111-00A_02",
-        "SerialNumber": "IMX93FRDM"
+        "SerialNumber": "IMX943EVK"
     }
 }

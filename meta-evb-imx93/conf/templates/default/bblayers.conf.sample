@@ -1,7 +1,4 @@
-# Stub template required for OpenBMC setup discovery
-# Real bblayers are provided by per-board templates
-#
-# # LAYER_CONF_VERSION is increased each time build/conf/bblayers.conf
+# LAYER_CONF_VERSION is increased each time build/conf/bblayers.conf
 # changes incompatibly
 LCONF_VERSION = "8"
 

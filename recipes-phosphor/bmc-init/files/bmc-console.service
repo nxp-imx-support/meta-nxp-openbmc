@@ -1,0 +1,14 @@
+[Unit]
+Description=BMC Console Setup (Every Boot)
+Before=obmc-console@ttyUART0.service
+After=bmc-state-change.service
+Requires=bmc-state-change.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/gpioset 0 2=0
+ExecStart=/usr/bin/gpioset 0 2=1
+
+[Install]
+WantedBy=multi-user.target

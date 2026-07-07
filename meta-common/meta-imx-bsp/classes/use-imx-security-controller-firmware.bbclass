@@ -17,11 +17,6 @@
 # present in the image file have it properly defined.
 
 SECO_FIRMWARE_NAME                    ?= ""
-SECO_FIRMWARE_NAME:mx8qm-generic-bsp  ?= "mx8qm${IMX_SOC_REV_LOWER}-ahab-container.img"
-SECO_FIRMWARE_NAME:mx8qxp-generic-bsp ?= "mx8qx${IMX_SOC_REV_LOWER}-ahab-container.img"
-SECO_FIRMWARE_NAME:mx8dx-generic-bsp  ?= "mx8qx${IMX_SOC_REV_LOWER}-ahab-container.img"
-SECO_FIRMWARE_NAME:mx8dxl-generic-bsp ?= "mx8dxl${IMX_SOC_REV_LOWER}-ahab-container.img"
-SECO_FIRMWARE_NAME:mx8ulp-generic-bsp ?= "mx8ulp${IMX_SOC_REV_LOWER}-ahab-container.img"
 SECO_FIRMWARE_NAME:mx91-generic-bsp   ?= "mx91${IMX_SOC_REV_LOWER}-ahab-container.img"
 SECO_FIRMWARE_NAME:mx93-generic-bsp   ?= "mx93${IMX_SOC_REV_LOWER}-ahab-container.img"
 SECO_FIRMWARE_NAME:mx95-generic-bsp   ?= "mx95${IMX_SOC_REV_LOWER}-ahab-container.img"

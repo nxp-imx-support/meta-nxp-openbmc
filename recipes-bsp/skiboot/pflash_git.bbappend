@@ -1,1 +1,0 @@
-EXTRA_OEMAKE:append = " ARCH=ARCH_ARM"

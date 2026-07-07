@@ -1,15 +1,2 @@
-require conf/machine/include/imx93.inc
-
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://imx_openbmc_defconfig"
-SRC_URI += "file://0001-openbmc-add-support-for-imx93-evk-frdm-imx91-evk.patch"
-SRC_URI += "file://0002-P3T2030-temperature-sensor-support-for-IMX.93.patch"
-SRC_URI += "file://0003-imx93-usb-peripheral-mode.patch"
-S = "${WORKDIR}/git"
-
-# Copy defconfig into kernel source before metadata check
-do_kernel_metadata:prepend() {
-    cp ${UNPACKDIR}/imx_openbmc_defconfig ${S}/arch/arm64/configs/
-}
-
+# No platform-specific cfg - all config in openbmc_common.cfg
+# KERNEL_DEVICETREE is set in meta-evb-imx93/conf/machine/evb-imx93.conf

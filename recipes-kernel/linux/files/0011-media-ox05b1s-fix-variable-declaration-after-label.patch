@@ -1,0 +1,44 @@
+From 18dd91a6e5a349c4fa6c41ea96fabf174e64989f Mon Sep 17 00:00:00 2001
+From: Hemant Agrawal <hemant.agrawal@nxp.com>
+Date: Fri, 3 Jul 2026 10:43:41 +0000
+Subject: [PATCH 07/11] media: ox05b1s: fix variable declaration after case
+ label
+
+C does not allow variable declarations directly after a case label
+without a compound statement block. This causes build errors:
+
+  error: a label can only be part of a statement and a declaration
+         is not a statement
+
+Wrap the V4L2_CID_EXPOSURE case body in braces to fix this.
+
+Upstream-Status: Pending
+Signed-off-by: Hemant Agrawal <hemant.agrawal@nxp.com>
+---
+ drivers/media/i2c/ox05b1s/ox05b1s_mipi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/i2c/ox05b1s/ox05b1s_mipi.c b/drivers/media/i2c/ox05b1s/ox05b1s_mipi.c
+index 37f42418b..13270ab09 100644
+--- a/drivers/media/i2c/ox05b1s/ox05b1s_mipi.c
++++ b/drivers/media/i2c/ox05b1s/ox05b1s_mipi.c
+@@ -746,7 +746,7 @@ static int ox05b1s_s_ctrl(struct v4l2_ctrl *ctrl)
+ 			ret |= ox05b1s_set_dgain_short(sensor, ctrl->val);
+ 		ret = ret ? -EIO : 0;
+ 		break;
+-	case V4L2_CID_EXPOSURE:
++	case V4L2_CID_EXPOSURE: {
+ 		u32 long_exp = ctrl->val;
+ 		u32 short_exp = ctrl->val / OX05B1S_EXP_RATIO;
+ 
+@@ -759,6 +759,7 @@ static int ox05b1s_s_ctrl(struct v4l2_ctrl *ctrl)
+ 			ret |= ox05b1s_set_exp_short(sensor, short_exp);
+ 		ret = ret ? -EIO : 0;
+ 		break;
++	}
+ 	case V4L2_CID_EXPOSURE_MULTI:
+ 		/* control available only for HDR mode */
+ 		if (!hdr_ctrl->cur.val)
+-- 
+2.43.0
+

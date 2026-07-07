@@ -10,6 +10,7 @@ LIC_FILES_CHKSUM:mx8mp-nxp-bsp = "file://COPYING;md5=bc649096ad3928ec06a8713b8d7
 LIC_FILES_CHKSUM:mx8mpul-nxp-bsp = "file://COPYING;md5=bc649096ad3928ec06a8713b8d787eac"
 
 LIC_FILES_CHKSUM:mx95-nxp-bsp = "file://COPYING;md5=bc649096ad3928ec06a8713b8d787eac"
+S = "${UNPACKDIR}"
 
 SRC_URI[imx8mn.sha256sum] = "6fb7bfad067f0dda55ce7d6e1f688da8d979e3a75a0a3e1325ad10684ce943b3"
 SRC_URI[imx8mnddr3l.sha256sum] = "e107ca6f12e863368133a881d8b848813bdad77249777926880dffbebd3c30c9"
@@ -19,4 +20,7 @@ SRC_URI[imx8mp.sha256sum] = "d97c215a466bc4155ca96b6c6697f1512d6650c29241559ffef
 SRC_URI[imx95.sha256sum] = "de703aba46ba58fb571f969985a68a1ca44cd2d274a711d074f12ea4d89cd4ab"
 
 COMPATIBLE_MACHINE = "(mx8mn-nxp-bsp|mx8mnul-nxp-bsp|mx8mp-nxp-bsp|mx8mpul-nxp-bsp|mx95-nxp-bsp)"
-
+do_deploy:mx95-nxp-bsp () {
+    install -d ${DEPLOYDIR}/mcore-demos
+    install -m 0644 ${WORKDIR}/imx95-m7-demo-${PV}/*.${MCORE_DEMO_FILE_EXTENSION} ${DEPLOYDIR}/mcore-demos/
+}

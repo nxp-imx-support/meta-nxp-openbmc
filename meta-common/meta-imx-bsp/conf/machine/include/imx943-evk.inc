@@ -3,7 +3,7 @@ MACHINEOVERRIDES =. "mx943:"
 require conf/machine/include/imx-base.inc
 
 MACHINE_FEATURES += "pci wifi bluetooth"
-MACHINE_FEATURES:append:use-nxp-bsp = " crrm optee dpdk nxpiw612-sdio nxp9098-pcie nxpaw693-pcie jailhouse rvgpu-emu"
+MACHINE_FEATURES:append:use-nxp-bsp = " crrm optee"
 
 KERNEL_DEVICETREE_BASENAME = "imx943-evk"
 KERNEL_DEVICETREE = " \
@@ -20,9 +20,9 @@ UBOOT_MAKE_TARGET = ""
 
 SPL_BINARY = "spl/u-boot-spl.bin"
 
-UBOOT_CONFIG ??= "${@bb.utils.contains('COMBINED_FEATURES', 'crrm', 'crrm', 'sd', d)}"
-UBOOT_CONFIG[sd]   = "${UBOOT_CONFIG_BASENAME}_defconfig,sdcard"
-UBOOT_CONFIG[crrm] = "${UBOOT_CONFIG_BASENAME}_xspi_crrm_defconfig"
+UBOOT_CONFIG ??= "sd"
+UBOOT_CONFIG[sd]   = "${UBOOT_CONFIG_BASENAME}_defconfig"
+UBOOT_CONFIG_IMAGE_FSTYPES[sd] = "sdcard"
 UBOOT_CONFIG[xspi] = "${UBOOT_CONFIG_BASENAME}_xspi_defconfig"
 
 # Set ATF platform name

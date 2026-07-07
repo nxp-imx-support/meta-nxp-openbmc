@@ -10,9 +10,7 @@ PV .= "+git${SRCPV}"
 SRC_URI = "${ATF_SRC};branch=${SRCBRANCH}"
 ATF_SRC ?= "git://github.com/nxp-imx/imx-atf.git;protocol=https"
 SRCBRANCH = "lf_v2.12"
-SRCREV = "6adc4c6f6d9e8bb647aa5b30112d0ce264900052"
-
-S = "${WORKDIR}/git"
+SRCREV = "4a2e9ef5f9f185bda68470b46365add008903b8c"
 
 inherit deploy
 
@@ -25,10 +23,6 @@ PACKAGECONFIG[debug] = "DEBUG=1,DEBUG=0"
 PACKAGECONFIG[optee] = "SPD=opteed"
 
 ATF_PLATFORM ??= "INVALID"
-
-# FIXME: We should return INVALID here but currently only i.MX8M has support to override the UART
-# base address in source code.
-ATF_BOOT_UART_BASE ?= ""
 
 # Let the Makefile handle setting up the CFLAGS and LDFLAGS as it is a standalone application
 CFLAGS[unexport] = "1"

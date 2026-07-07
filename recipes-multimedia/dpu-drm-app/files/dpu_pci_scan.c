@@ -353,6 +353,42 @@ static void handle_event(char *buf, int len)
 
                 printf("[UEVENT] %dx%d\n", w, h);
                 update_last_resolution(w, h);
+
+                /* Recreate FB at new host resolution so pitch matches */
+                if (fb_id) {
+                    drmModeRmFB(fd, fb_id);
+                    fb_id = 0;
+                }
+                if (map && map != MAP_FAILED) {
+                    munmap(map, size);
+                    map = NULL;
+                }
+                if (handle) {
+                    struct drm_mode_destroy_dumb d = {0};
+                    d.handle = handle;
+                    ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &d);
+                    handle = 0;
+                }
+                create_fb(w, h);
+
+                /* Update stream2v4l2 resolution via sysfs */
+                {
+                    char val[16];
+                    FILE *f;
+                    snprintf(val, sizeof(val), "%d", w);
+                    if ((f = fopen("/sys/module/stream2v4l2/parameters/width", "w"))) {
+                        fputs(val, f); fclose(f);
+                    }
+                    snprintf(val, sizeof(val), "%d", h);
+                    if ((f = fopen("/sys/module/stream2v4l2/parameters/height", "w"))) {
+                        fputs(val, f); fclose(f);
+                    }
+                    snprintf(val, sizeof(val), "%d", (int)pitch);
+                    if ((f = fopen("/sys/module/stream2v4l2/parameters/pitch", "w"))) {
+                        fputs(val, f); fclose(f);
+                    }
+                }
+
                 atomic_modeset(w, h);
             }
         }
@@ -433,7 +469,25 @@ int main()
     
     load_resolution();
 
-    create_fb(mode.hdisplay, mode.vdisplay);
+    create_fb(last_w, last_h);
+
+    /* Update stream2v4l2 resolution via sysfs */
+    {
+        char val[16];
+        FILE *f;
+        snprintf(val, sizeof(val), "%d", last_w);
+        if ((f = fopen("/sys/module/stream2v4l2/parameters/width", "w"))) {
+            fputs(val, f); fclose(f);
+        }
+        snprintf(val, sizeof(val), "%d", last_h);
+        if ((f = fopen("/sys/module/stream2v4l2/parameters/height", "w"))) {
+            fputs(val, f); fclose(f);
+        }
+        snprintf(val, sizeof(val), "%d", (int)pitch);
+        if ((f = fopen("/sys/module/stream2v4l2/parameters/pitch", "w"))) {
+            fputs(val, f); fclose(f);
+        }
+    }
 
     atomic_modeset(last_w, last_h);
 

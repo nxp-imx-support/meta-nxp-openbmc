@@ -47,7 +47,7 @@ BOOT_VARIANT ?= ""
 TOOLS_NAME ?= "mkimage_imx8"
 
 IMX_BOOT_SOC_TARGET       ?= "INVALID"
-IMXBOOT_DTB = "imx93-11x11-frdm-bmc.dtb"
+IMXBOOT_DTB ?= "${UBOOT_DTB_NAME}"
 
 DEPLOY_OPTEE = "${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'true', 'false', d)}"
 DEPLOY_OPTEE_STMM = "${@bb.utils.contains('MACHINE_FEATURES', 'optee stmm', 'true', 'false', d)}"

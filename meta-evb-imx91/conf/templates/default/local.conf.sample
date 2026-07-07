@@ -1,5 +1,5 @@
-# Stub template for OpenBMC setup discovery
-# Real board configurations live in per-board template directories
+# NXP imx91 example local.conf settings
+# This file is a convenience template and may be freely modified by the user
 
 MACHINE ??= "evb-imx91"
 DISTRO ?= "openbmc-phosphor"
@@ -9,12 +9,13 @@ EXTRA_IMAGE_FEATURES ?= "allow-root-login"
 IMAGE_INSTALL:append = " net-tools curl lmsensors phosphor-hwmon openipmi ipmitool dbus-sensors socat entity-manager"
 IMX_MIRROR ?= "https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/"
 
-# FIXME: set this to avoid changing all the recipes that use it
-FSL_MIRROR ?= "${IMX_MIRROR}"
 
+# NXP Yocto mirror for source archives
 MIRRORS += " \
 ${IMX_MIRROR}   http://download.ossystems.com.br/bsp/freescale/source/ \n \
 "
+FSL_MIRROR ?= "${IMX_MIRROR}"
+
 ACCEPT_FSL_EULA = "1"
 USER_CLASSES ?= "buildstats"
 PATCHRESOLVE = "noop"

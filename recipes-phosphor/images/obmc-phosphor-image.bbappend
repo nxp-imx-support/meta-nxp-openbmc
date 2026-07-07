@@ -1,6 +1,5 @@
-SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE:${PN} = "phosphor-mboxd.service phosphor-ipmi-kcs.service phosphor-lpcd.service"
-SYSTEMD_MASK:${PN} = "phosphor-mboxd.service phosphor-ipmi-kcs.service phosphor-lpcd.service"
-IMAGE_INSTALL:append = " usb-nbd"
+IMAGE_INSTALL:append = " bmc-init"
+IMAGE_INSTALL:remove = " packagegroup-fsl-optee-imx "
 
-OBMC_IMAGE_EXTRA_INSTALL:append:nxp = " mboxd liberation-fonts uart-render-controller nxp-hostctrl host-reset webui-vue "
+OBMC_WEBUI = "webui-vue"
+OBMC_IMAGE_EXTRA_INSTALL:append:nxp = " webui-vue phosphor-image-signing uart-render-controller nxp-hostctrl phosphor-sel-logger "

@@ -4,7 +4,7 @@ DEPENDS += "util-linux-libuuid"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/optee-client:"
 SRC_URI:remove = "git://github.com/OP-TEE/optee_client.git;branch=master;protocol=https"
-SRC_URI:prepend = "${OPTEE_CLIENT_SRC};branch=${SRCBRANCH} "
+SRC_URI:prepend = "${OPTEE_CLIENT_SRC};branch=${SRCBRANCH};name=client "
 OPTEE_CLIENT_SRC ?= "git://github.com/nxp-imx/imx-optee-client.git;protocol=https"
 
 SRC_URI += "file://0001-tee-supplicant-Fix-non-arch-service-unit-install-pat.patch"

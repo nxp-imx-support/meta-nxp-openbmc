@@ -8,7 +8,7 @@ SRC_URI = "${UBOOT_SRC};branch=${SRCBRANCH}"
 UBOOT_SRC ?= "git://github.com/nxp-imx/uboot-imx.git;protocol=https"
 SRCBRANCH = "lf_v2025.04"
 LOCALVERSION ?= "-${SRCBRANCH}"
-SRCREV = "44898b9f3cfe5ff881c11ab1c44b714041f2b4ac"
+SRCREV = "99518e6b6f20cb6a2bf19115e355db9f58100af8"
 
 DEPENDS += " \
     bc-native \
@@ -21,7 +21,6 @@ DEPENDS += " \
     xxd-native \
 "
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 inherit fsl-u-boot-localversion

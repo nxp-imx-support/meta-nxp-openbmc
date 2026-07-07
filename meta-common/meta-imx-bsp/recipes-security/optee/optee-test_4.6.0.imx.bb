@@ -7,5 +7,8 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a8fa504109e4cd7ea575bc49ea4be560 \
                     file://LICENSE-GPL;md5=10e86b5d2a6cb0e2b9dcfdd26a9ac58d"
 
 
-SRCBRANCH = "lf-6.12.34_2.1.0"
-SRCREV = "1d4c43094c2c76207249f9750910ec834dfb6d1f"
+SRCBRANCH = "lf-6.18.2_1.0.0"
+SRC_URI = "${OPTEE_TEST_SRC};branch=${SRCBRANCH};name=test"
+SRCREV_test = "3383a744a5997fdb3457b3cbe95aea3ce27879b3"
+
+SRCREV_FORMAT = "test"

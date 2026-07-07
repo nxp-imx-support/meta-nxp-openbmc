@@ -11,14 +11,15 @@ SRC_URI = "${FSL_MIRROR}/${BP}-${IMX_SRCREV_ABBREV}.bin;fsl-eula=true"
 IMX_SRCREV_ABBREV = "286c884"
 SRC_URI[sha256sum] = "e0bb78c94c04b771ca63bc530db7fb06e8a6415fc1c258f47f92952a39dd94a3"
 
-S = "${WORKDIR}/${BP}-${IMX_SRCREV_ABBREV}"
+S = "${UNPACKDIR}/../${BP}-${IMX_SRCREV_ABBREV}"
 
 do_compile[noexec] = "1"
 
 do_install() {
     install -d ${D}${nonarch_base_libdir}/firmware/imx/ele
-    for fw in ${SECO_FIRMWARE_NAME} ${SECOEXT_FIRMWARE_NAME}; do
-        install -m 0644 ${S}/$fw ${D}${nonarch_base_libdir}/firmware/imx/ele
+
+    for img in ${S}/*.img; do
+        install -m 0644 "$img" "${D}${nonarch_base_libdir}/firmware/imx/ele/"
     done
 }
 

@@ -4,7 +4,7 @@ require conf/machine/include/imx-base.inc
 
 
 MACHINE_FEATURES += "pci wifi bluetooth"
-MACHINE_FEATURES:append:use-nxp-bsp = " optee jailhouse nxpiw612-sdio"
+MACHINE_FEATURES:append:use-nxp-bsp = " optee"
 
 KERNEL_DEVICETREE = " \
     freescale/${KERNEL_DEVICETREE_BASENAME}.dtb \
@@ -21,7 +21,8 @@ UBOOT_MAKE_TARGET = ""
 SPL_BINARY = "spl/u-boot-spl.bin"
 
 UBOOT_CONFIG ??= "sd"
-UBOOT_CONFIG[sd]   = "${UBOOT_CONFIG_BASENAME}_defconfig,sdcard"
+UBOOT_CONFIG[sd]   = "${UBOOT_CONFIG_BASENAME}_defconfig"
+UBOOT_CONFIG_IMAGE_FSTYPES[sd] = "sdcard"
 UBOOT_CONFIG[ecc]  = "${UBOOT_CONFIG_BASENAME}_inline_ecc_defconfig"
 UBOOT_CONFIG[ld]   = "${UBOOT_CONFIG_BASENAME}_ld_defconfig"
 
