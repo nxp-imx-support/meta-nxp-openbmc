@@ -52,7 +52,7 @@ PREFERRED_VERSION_wayland-protocols:imx-nxp-bsp ??= "1.41.imx"
 
 PREFERRED_VERSION_xwayland:imx-nxp-bsp ??= ""
 
-PREFERRED_VERSION_libdrm:imx-nxp-bsp ??= "2.4.123.imx"
+PREFERRED_VERSION_libdrm:imx-nxp-bsp ??= "2.4.131"
 
 PREFERRED_VERSION_optee-client:mx9-nxp-bsp ??= "4.6.0.imx"
 PREFERRED_VERSION_optee-os:mx9-nxp-bsp     ??= "4.6.0.imx"

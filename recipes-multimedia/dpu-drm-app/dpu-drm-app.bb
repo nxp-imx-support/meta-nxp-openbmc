@@ -5,6 +5,8 @@ LICENSE = "CLOSED"
 SRC_URI = "file://dpu_pci_scan.c \
            file://dpu-drm-app.service"
 
+S = "${UNPACKDIR}"
+
 DEPENDS = "libdrm"
 
 inherit pkgconfig systemd

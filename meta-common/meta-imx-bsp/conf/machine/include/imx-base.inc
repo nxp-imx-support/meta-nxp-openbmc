@@ -236,7 +236,7 @@ PREFERRED_VERSION_wayland-protocols:mx9-nxp-bsp  ??= "1.32.imx"
 PREFERRED_VERSION_xwayland:imx-nxp-bsp ??= "23.1.1.imx"
 
 # Use i.MX libdrm Version
-PREFERRED_VERSION_libdrm:mx9-nxp-bsp ??= "2.4.116.imx"
+PREFERRED_VERSION_libdrm:mx9-nxp-bsp ??= "2.4.131"
 
 # Use i.MX optee Version
 PREFERRED_VERSION_optee-os:mx9-nxp-bsp     ??= "4.0.0.imx"
