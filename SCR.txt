@@ -5,7 +5,7 @@ Release - meta-nxp for openbmc yocto release
 Outgoing License: LA_OPT_Online Code Hosting NXP_Software_License - v1.4 May 2025
 License File:     LICENSE.txt
 
-Release tag: openbmc-2.18-nxp-1.0
+Release tag: openbmc-nxp-1.1.0
 Release Location: https://github.com/nxp-imx-support/meta-nxp-openbmc.git
 
 --------------------------------------------
@@ -116,13 +116,13 @@ BSP Packages
 --------------------------------------------
 
 Package:                     linux-imx.git
-Version:                     6.12
+Version:                     6.18
 Outgoing License:            GPL-2.0 WITH Linux-syscall-note 
 License File:                COPYING
 Package Category:            BSP
 Type of Content:             source
 Description and comments:    The Linux kernel with i.MX-specific drivers
-Release Location:            https://github.com/nxp-imx/linux-imx -b lf-6.12.49-2.2.0
+Release Location:            https://github.com/nxp-imx/linux-imx -b lf-6.18.2-1.0.0
 Origin:                      NXP (GPL-2.0)
                              kernel.org (GPL-2.0) - https://www.kernel.org/
 
@@ -192,8 +192,8 @@ Origin:                      NXP (LA_OPT_NXP_Software_License)
                              ARM CMSIS Library (BSD-3-clause) - https://silver.arm.com/
 
 --------------------------------------------
-Package:                     firmware-imx-8.28-994fa14.bin
-Version:                     8.28
+Package:                     firmware-imx-8.29.bin
+Version:                     8.29
 Outgoing License:            LA_OPT_NXP_Software_License v62 May 2025 Additional distribution license granted - Section 2.3 applies
 License File:                COPYING
 Package Category:            BSP
@@ -224,8 +224,8 @@ Origin:                      NXP (LA_OPT_NXP_Software_License)
 
 --------------------------------------------
 
-Package:                     firmware-ele-imx-2.0.2-89161a8.bin
-Version:                     2.0.2
+Package:                     firmware-ele-imx-2.0.3.bin
+Version:                     2.0.3
 Outgoing License:            LA_OPT_NXP_Software_License v62 May 2025 Additional distribution license granted - Section 2.3 applies
 License File:                COPYING
 Package Category:            BSP
@@ -384,7 +384,7 @@ Origin:                      NXP (Apache-2.0)
 
 --------------------------------------------
 Package:                     imx-optee-client.git
-Version:                     4.2.0.imx
+Version:                     4.6.0.imx
 Outgoing License:            BSD-2-Clause 
 License File:                LICENSE
 Package Category:            BSP
@@ -397,7 +397,7 @@ Origin:                      NXP (BSD-2-Clause)
 --------------------------------------------
 
 Package:                     imx-optee-os.git
-Version:                     4.2.0.imx
+Version:                     4.6.0.imx
 Outgoing License:            BSD-2-Clause 
 License File:                LICENSE
 Package Category:            BSP
@@ -411,7 +411,7 @@ Origin:                      NXP (BSD-2-Clause)
 --------------------------------------------
 
 Package:                     imx-optee-test.git
-Version:                     4.2.0.imx
+Version:                     4.6.0.imx
 Outgoing License:            BSD-2-Clause (ta/) and GPL-2.0 (host/) 
 License File:                LICENSE.md
 Package Category:            BSP
