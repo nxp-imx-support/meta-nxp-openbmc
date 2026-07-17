@@ -62,7 +62,10 @@ BSP_FIXES = " \
 
 # iKVM PCIe EP patches (mx943 and mx95 only)
 IKVM_PCIE_EP_PATCHES = " \
-    file://0004-ikvm-pcie-ep-local-display-remote-kvm-imx95-6.18.patch \
+    file://0004-ikvm-pcie-ep-local-display-remote-kvm-imx95-6.18.patch \	
+    file://0012-media-stream2v4l2-fix-vb2-release-and-resolution-upd.patch \
+    file://0013-media-stream2v4l2-use-DPU95-blit-engine-for-zero-cop.patch \
+    file://0014-meta-nxp-media-stream2v4l2-add-i.MX94-support-and-fi.patch \
 "
 
 # Apply common cfg + per-platform patches via MACHINE override

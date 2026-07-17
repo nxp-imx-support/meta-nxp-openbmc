@@ -1,11 +1,15 @@
- #!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2026 NXP
+
+#!/bin/sh
 cat /sys/kernel/debug/devices_deferred && /usr/bin/pci_cfg.sh
 
-IP=$(ip -4 addr show eth0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+IP=$(ip -4 addr show eth0 2>/dev/null \
+    | awk '/inet / {split($2,a,"/"); print a[1]; exit}')
 
-# Fallback if eth0 not available
 if [ -z "$IP" ]; then
-    IP=$(hostname -I | awk '{print $1}')
+    IP=$(ip -4 addr \
+        | awk '/inet / && $2 !~ /^127/ {split($2,a,"/"); print a[1]; exit}')
 fi
 
 HOST=$(hostname)
@@ -21,7 +25,7 @@ center_line() {
 print_line() {
     TEXT="$1"
     INNER_WIDTH=$((BOX_WIDTH-4))
-    printf -v FORMATTED "%-${INNER_WIDTH}s" "$TEXT"
+    FORMATTED=$(printf "%-${INNER_WIDTH}s" "$TEXT")
     center_line "| $FORMATTED |"
 }
 
@@ -38,8 +42,8 @@ print_line "Hostname:          $HOST.local"
 print_line ""
 
 print_line "Access URLs:"
-print_line "http://$IP:8000/"
-print_line "http://$HOST.local:8000/"
+print_line "https://$IP/"
+print_line "https://$HOST.local/"
 
 print_line ""
 print_line "Note:"

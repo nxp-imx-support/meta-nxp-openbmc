@@ -1,4 +1,7 @@
-#define _GNU_SOURCE
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright 2026 NXP
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,9 +21,9 @@
 #include <xf86drmMode.h>
 #include <drm/drm.h>
 #include <drm/drm_mode.h>
+#include <drm/drm_fourcc.h>
 
 #define DRM_DEV "/dev/dri/card0"
-#define STREAM_DEV "/dev/stream"
 #define RES_FILE "/tmp/last_res.conf"
 #define UEVENT_BUF 4096
 
@@ -63,7 +66,14 @@ struct drm_imx_dpu_get_dma_address {
 };
 
 #define DRM_IOCTL_IMX_DPU_GET_DMA_ADDRESS    DRM_IOWR(0x44, struct drm_imx_dpu_get_dma_address)
-#define STREAM_IOC_SET_OFFSET _IOW('S', 2, uint64_t)
+
+static int is_display_connected(void);
+
+static int log_error(const char *msg)
+{
+    printf("[ERR] %s: %s\n", msg, strerror(errno));
+    return -1;
+}
 
 static void exit_app(const char *msg)
 {
@@ -100,19 +110,22 @@ static uint32_t get_prop(uint32_t obj_id, uint32_t type, const char *name)
 
 static void send_dma_to_stream(uint64_t dma_addr)
 {
-    int sfd;
-    uint64_t off;
+    char val[32];
+    FILE *f;
 
-    sfd = open(STREAM_DEV, O_RDWR);
-    if (sfd < 0)
-        exit_app("open /dev/streme");
+    snprintf(val, sizeof(val), "0x%llx",
+             (unsigned long long)dma_addr);
 
-    off = dma_addr;
-    
-    if (ioctl(sfd, STREAM_IOC_SET_OFFSET, &off) < 0)
-        exit_app("STREAM_IOC_SET_OFFSET");
+    f = fopen("/sys/module/pci_epf_test/parameters/offset", "w");
+    if (!f) {
+        perror("fopen");
+        return;
+    }
 
-    close(sfd);
+    fprintf(f, "%s", val);
+    fclose(f);
+
+    printf("DMA address sent to kernel: %s\n", val);
 }
 
 static void create_fb(int w, int h)
@@ -122,8 +135,10 @@ static void create_fb(int w, int h)
     creq.height = h;
     creq.bpp = 32;
 
-    if (ioctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &creq))
-        exit_app("CREATE_DUMB");
+    if (ioctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &creq)) {
+        log_error("CREATE_DUMB");
+        return;
+    }
 
     handle = creq.handle;
     pitch  = creq.pitch;
@@ -133,24 +148,44 @@ static void create_fb(int w, int h)
 
     dma.handle = handle;
 
-    if (ioctl(fd, DRM_IOCTL_IMX_DPU_GET_DMA_ADDRESS, &dma))
-        exit_app("GET_DMA");
+    if (ioctl(fd, DRM_IOCTL_IMX_DPU_GET_DMA_ADDRESS, &dma)) {
+        log_error("GET_DMA");
+        return;
+    }
         
     send_dma_to_stream(dma.dma_addr);
 
     struct drm_mode_map_dumb mreq = {0};
     mreq.handle = handle;
 
-    if (ioctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq))
-        exit_app("MAP_DUMB");
+    if (ioctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq)) {
+        log_error("MAP_DUMB");
+        return;
+    }
 
     map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mreq.offset);
-    if (map == MAP_FAILED)
-        exit_app("mmap");
+    if (map == MAP_FAILED) {
+        log_error("mmap");
+        return;
+    }
 
+    uint32_t handles[4] = { handle };
+    uint32_t pitches[4] = { pitch };
+    uint32_t offsets[4] = { 0 };
 
-    if (drmModeAddFB(fd, w, h, 24, 32, pitch, handle, &fb_id))
-        exit_app("AddFB");
+    if (drmModeAddFB2(fd,
+                    w,
+                    h,
+                    DRM_FORMAT_XRGB8888,
+                    handles,
+                    pitches,
+                    offsets,
+                    &fb_id,
+                    0))
+    {
+        log_error("AddFB2");
+        return;
+    }
 
     printf("[DRM] FB created %dx%d\n", w, h);
 }
@@ -158,7 +193,10 @@ static void create_fb(int w, int h)
 static uint32_t find_plane(uint32_t crtc_index)
 {
     drmModePlaneRes *pres = drmModeGetPlaneResources(fd);
-    if (!pres) exit_app("plane res");
+    if (!pres) {
+        log_error("plane res");
+        return 0;
+    }
 
     for (uint32_t i = 0; i < pres->count_planes; i++) {
 
@@ -178,7 +216,7 @@ static uint32_t find_plane(uint32_t crtc_index)
     }
 
     drmModeFreePlaneResources(pres);
-    exit_app("no compatible plane");
+    log_error("no compatible plane");
     return 0;
 }
 
@@ -187,7 +225,10 @@ static void init_display()
     drmSetClientCap(fd, DRM_CLIENT_CAP_ATOMIC, 1);
 
     drmModeRes *res = drmModeGetResources(fd);
-    if (!res) exit_app("resources");
+    if (!res) {
+        log_error("resources");
+        return;
+    }
 
     for (int i = 0; i < res->count_connectors; i++) {
 
@@ -209,7 +250,7 @@ static void init_display()
         drmModeFreeConnector(c);
     }
 
-    exit_app("no display");
+    log_error("no display");
 
 props:
 
@@ -241,14 +282,31 @@ props:
 
 static void atomic_modeset(int src_w, int src_h)
 {
+    if (!is_display_connected()) {
+        printf("[INFO] HDMI disconnected. "
+               "Skipping atomic commit (%dx%d)\n",
+               src_w, src_h);
+        return;
+    }
+    
+    if (src_w <= 0 || src_h <= 0) {
+        printf("[ERR] invalid src size %dx%d\n",
+               src_w, src_h);
+        return;
+    }
+
     drmModeAtomicReq *req = drmModeAtomicAlloc();
-    if (!req) exit_app("atomic alloc");
+    if (!req) {
+        log_error("atomic alloc");
+        return;
+    }
 
     uint32_t blob_id;
 
-    if (drmModeCreatePropertyBlob(fd, &mode,
-        sizeof(mode), &blob_id))
-        exit_app("blob");
+    if (drmModeCreatePropertyBlob(fd, &mode, sizeof(mode), &blob_id)) {
+        log_error("blob");
+        return;
+    }
 
     drmModeAtomicAddProperty(req, conn_id, conn_crtc_id, crtc_id);
     drmModeAtomicAddProperty(req, crtc_id, crtc_mode_id, blob_id);
@@ -324,6 +382,11 @@ void load_resolution(void)
 
 void update_last_resolution(int w, int h)
 {
+    if (w <= 0 || h <= 0) {
+        printf("[WARN] invalid resolution %dx%d\n", w, h);
+        return;
+    }
+
     last_w = w;
     last_h = h;
 
@@ -337,13 +400,116 @@ void restore_default(void)
     atomic_modeset(default_w, default_h);
 }
 
+static int is_display_connected(void)
+{
+    drmModeRes *res = drmModeGetResources(fd);
+
+    if (!res)
+        return 0;
+
+    for (int i = 0; i < res->count_connectors; i++) {
+
+        drmModeConnector *c =
+            drmModeGetConnector(fd, res->connectors[i]);
+
+        if (!c)
+            continue;
+
+        if (c->connection == DRM_MODE_CONNECTED &&
+            c->count_modes > 0) {
+
+            drmModeFreeConnector(c);
+            drmModeFreeResources(res);
+
+            return 1;
+        }
+
+        drmModeFreeConnector(c);
+    }
+
+    drmModeFreeResources(res);
+
+    return 0;
+}
+
+static int wait_for_fb0(void)
+{
+    int retry = 50;
+
+    while (retry--) {
+
+        if (access("/dev/fb0", F_OK) == 0) {
+
+            printf("[FB] /dev/fb0 ready\n");
+
+            return 0;
+        }
+
+        usleep(100000);
+    }
+
+    printf("[FB] timeout waiting for /dev/fb0\n");
+
+    return -1;
+}
+
+static void reinit_display(void)
+{
+    printf("[HOTPLUG] reinitializing display\n");
+
+    if (map && map != MAP_FAILED) {
+        munmap(map, size);
+        map = NULL;
+    }
+
+    if (fb_id) {
+        drmModeRmFB(fd, fb_id);
+        fb_id = 0;
+    }
+
+    if (handle) {
+
+        struct drm_mode_destroy_dumb d = {0};
+
+        d.handle = handle;
+
+        ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &d);
+
+        handle = 0;
+    }
+
+    if (wait_for_fb0() < 0)
+        return;
+
+    init_display();
+
+    load_resolution();
+
+    create_fb(mode.hdisplay, mode.vdisplay);
+
+    if (last_w <= 0 || last_h <= 0) {
+        last_w = default_w;
+        last_h = default_h;
+    }
+
+    atomic_modeset(last_w, last_h);
+
+    printf("[HOTPLUG] done\n");
+}
+
 static void handle_event(char *buf, int len)
 {
     int i = 0;
+    int hotplug = 0;
 
     while (i < len) {
 
         char *msg = buf + i;
+
+        if (strncmp(msg, "change@", 7) == 0 && strstr(msg, "/drm/card0"))
+        {
+            hotplug = 1;
+        }
 
         if (strncmp(msg, "RESOLUTION=", 11) == 0) {
 
@@ -353,47 +519,49 @@ static void handle_event(char *buf, int len)
 
                 printf("[UEVENT] %dx%d\n", w, h);
                 update_last_resolution(w, h);
-
-                /* Recreate FB at new host resolution so pitch matches */
-                if (fb_id) {
-                    drmModeRmFB(fd, fb_id);
-                    fb_id = 0;
-                }
-                if (map && map != MAP_FAILED) {
-                    munmap(map, size);
-                    map = NULL;
-                }
-                if (handle) {
-                    struct drm_mode_destroy_dumb d = {0};
-                    d.handle = handle;
-                    ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &d);
-                    handle = 0;
-                }
-                create_fb(w, h);
-
+                save_resolution();
+                atomic_modeset(w, h);
                 /* Update stream2v4l2 resolution via sysfs */
                 {
-                    char val[16];
+                    char val[32];
                     FILE *f;
-                    snprintf(val, sizeof(val), "%d", w);
-                    if ((f = fopen("/sys/module/stream2v4l2/parameters/width", "w"))) {
-                        fputs(val, f); fclose(f);
-                    }
-                    snprintf(val, sizeof(val), "%d", h);
-                    if ((f = fopen("/sys/module/stream2v4l2/parameters/height", "w"))) {
-                        fputs(val, f); fclose(f);
-                    }
-                    snprintf(val, sizeof(val), "%d", (int)pitch);
-                    if ((f = fopen("/sys/module/stream2v4l2/parameters/pitch", "w"))) {
+                    snprintf(val, sizeof(val), "%dx%d:%d", w, h, (int)w * 4);
+                    if ((f = fopen("/sys/module/stream2v4l2/parameters/resolution", "w"))) {
                         fputs(val, f); fclose(f);
                     }
                 }
-
-                atomic_modeset(w, h);
             }
         }
 
         i += strlen(msg) + 1;
+    }
+
+    if (hotplug) {
+
+        printf("[HOTPLUG DETECTED]\n");
+        if (is_display_connected()) {
+            printf("[HDMI] connected\n");
+            reinit_display();
+        } else {
+            printf("[HDMI] disconnected\n");
+            save_resolution();
+            if (map && map != MAP_FAILED) {
+                munmap(map, size);
+                map = NULL;
+            }
+
+            if (fb_id) {
+                drmModeRmFB(fd, fb_id);
+                fb_id = 0;
+            }
+
+            if (handle) {
+                struct drm_mode_destroy_dumb d = {0};
+                d.handle = handle;
+                ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &d);
+                handle = 0;
+            }
+        }
     }
 }
 
@@ -463,31 +631,23 @@ int main()
 
     fd = open(DRM_DEV, O_RDWR | O_CLOEXEC);
     if (fd < 0)
-        exit_app("open drm");
+        log_error("open drm");
 
     init_display();
     
     load_resolution();
 
-    create_fb(last_w, last_h);
+    create_fb(mode.hdisplay, mode.vdisplay);
 
-    /* Update stream2v4l2 resolution via sysfs */
-    {
-        char val[16];
-        FILE *f;
-        snprintf(val, sizeof(val), "%d", last_w);
-        if ((f = fopen("/sys/module/stream2v4l2/parameters/width", "w"))) {
-            fputs(val, f); fclose(f);
-        }
-        snprintf(val, sizeof(val), "%d", last_h);
-        if ((f = fopen("/sys/module/stream2v4l2/parameters/height", "w"))) {
-            fputs(val, f); fclose(f);
-        }
-        snprintf(val, sizeof(val), "%d", (int)pitch);
-        if ((f = fopen("/sys/module/stream2v4l2/parameters/pitch", "w"))) {
-            fputs(val, f); fclose(f);
-        }
-    }
+	/* Update stream2v4l2 resolution via sysfs */
+	{
+	    char val[32];
+	    FILE *f;
+	    snprintf(val, sizeof(val), "%dx%d:%d", last_w, last_h, (int)last_w * 4);
+	    if ((f = fopen("/sys/module/stream2v4l2/parameters/resolution", "w"))) {
+		fputs(val, f); fclose(f);
+	    }
+	}
 
     atomic_modeset(last_w, last_h);
 
