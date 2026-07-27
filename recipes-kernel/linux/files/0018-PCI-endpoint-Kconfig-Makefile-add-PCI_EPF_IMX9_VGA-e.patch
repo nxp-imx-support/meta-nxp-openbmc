@@ -1,0 +1,89 @@
+From 80cebc4d209b08fbc52c8f5632ed4ce6e58a9db5 Mon Sep 17 00:00:00 2001
+From: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+Date: Fri, 31 Jul 2026 20:33:25 +0530
+Subject: [PATCH 4/4] PCI: endpoint: Kconfig/Makefile: add PCI_EPF_IMX9_VGA
+ entry
+
+Add Kconfig entry and Makefile rule for the new pci-epf-vga driver.
+Update stream2v4l2 Kconfig to depend on PCI_EPF_IMX9_VGA and use
+VIDEOBUF2_DMA_CONTIG for zero-copy DPU95 path.
+
+Upstream-Status: Pending
+Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+---
+ drivers/media/platform/stream2v4l2/Kconfig | 18 +++++++++++-------
+ drivers/pci/endpoint/functions/Kconfig     | 22 ++++++++++++++++++++++
+ drivers/pci/endpoint/functions/Makefile    |  1 +
+ 3 files changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/platform/stream2v4l2/Kconfig b/drivers/media/platform/stream2v4l2/Kconfig
+index 8a2ad83ecce8..060eb995db84 100644
+--- a/drivers/media/platform/stream2v4l2/Kconfig
++++ b/drivers/media/platform/stream2v4l2/Kconfig
+@@ -1,13 +1,17 @@
+ config VIDEO_STREAM2V4L2
+-    tristate "PCIe stream to V4L2 MJPEG bridge"
++    tristate "PCIe EP framebuffer to V4L2 capture bridge (iKVM)"
+     depends on MEDIA_SUPPORT && VIDEO_DEV
++    depends on PCI_EPF_IMX9_VGA
+     select VIDEOBUF2_CORE
+-    select VIDEOBUF2_VMALLOC
++    select VIDEOBUF2_DMA_CONTIG
+     default m
+     help
+-      Say Y or M here if you want to expose a PCIe-delivered
+-      host video stream as a V4L2 capture device suitable
+-      for OpenBMC iKVM (RGB24 only).
++      Say Y or M here to expose the i.MX9 PCIe endpoint framebuffer
++      as a V4L2 capture device for OpenBMC iKVM.
+ 
+-      This driver creates a virtual V4L2 capture device
+-      backed by /dev/stream.
++      This driver reads the VRAM framebuffer address from the VGA EPF
++      driver (pci-epf-imx9-vga) via pci_epf_get_vram_fb_address() and uses
++      the DPU95 blit engine for zero-copy BGRX->RGBX conversion into
++      DMA-contiguous V4L2 capture buffers.
++
++      Requires CONFIG_PCI_EPF_VGA=y or =m.
+diff --git a/drivers/pci/endpoint/functions/Kconfig b/drivers/pci/endpoint/functions/Kconfig
+index 0c9cea0698d7..a53d12f1ddfd 100644
+--- a/drivers/pci/endpoint/functions/Kconfig
++++ b/drivers/pci/endpoint/functions/Kconfig
+@@ -47,3 +47,25 @@ config PCI_EPF_MHI
+ 	   devices such as SDX55.
+ 
+ 	   If in doubt, say "N" to disable Endpoint driver for MHI bus.
++
++config PCI_EPF_IMX9_VGA
++	tristate "PCI Endpoint VGA Class Display driver (i.MX9 iKVM)"
++	depends on PCI_ENDPOINT
++	depends on OF
++	select FIRMWARE_LOADER
++	help
++	  Enable this driver to expose the i.MX9 PCIe endpoint as a VGA
++	  class display device for iKVM (IP-based KVM over PCIe) use cases.
++
++	  Provides:
++	    - BAR1: EDID (read from DRM sysfs or 4K fallback blob)
++	    - BAR2: 32MB VRAM (ioremap_wc, DT reserved-memory node "vram")
++	    - BAR4: DPU95 register space (ioremap at 0x4b400000)
++	    - Option ROM via firmware loader (OptionRom.rom)
++	    - Resolution change uevent to userspace
++	    - pci_epf_get_vram_fb_address() for stream2v4l2
++
++	  This driver is independent of PCI_EPF_TEST.
++
++	  If in doubt, say "N".
++
+diff --git a/drivers/pci/endpoint/functions/Makefile b/drivers/pci/endpoint/functions/Makefile
+index 696473fce50e..06591fd5881d 100644
+--- a/drivers/pci/endpoint/functions/Makefile
++++ b/drivers/pci/endpoint/functions/Makefile
+@@ -7,3 +7,4 @@ obj-$(CONFIG_PCI_EPF_TEST)		+= pci-epf-test.o
+ obj-$(CONFIG_PCI_EPF_NTB)		+= pci-epf-ntb.o
+ obj-$(CONFIG_PCI_EPF_VNTB) 		+= pci-epf-vntb.o
+ obj-$(CONFIG_PCI_EPF_MHI)		+= pci-epf-mhi.o
++obj-$(CONFIG_PCI_EPF_IMX9_VGA)		+= pci-epf-imx9-vga.o
+-- 
+2.43.0
+

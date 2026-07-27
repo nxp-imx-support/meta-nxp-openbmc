@@ -116,7 +116,7 @@ static void send_dma_to_stream(uint64_t dma_addr)
     snprintf(val, sizeof(val), "0x%llx",
              (unsigned long long)dma_addr);
 
-    f = fopen("/sys/module/pci_epf_test/parameters/offset", "w");
+    f = fopen("/sys/module/pci_epf_imx9_vga/parameters/offset", "w");
     if (!f) {
         perror("fopen");
         return;
