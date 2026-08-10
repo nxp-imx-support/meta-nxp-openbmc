@@ -114,7 +114,7 @@ git clone https://github.com/openbmc/openbmc.git
 cd openbmc
 git checkout -b wrynose origin/wrynose
 git clone https://bitbucket.sw.nxp.com/scm/isp/meta-nxp-openbmc.git meta-nxp
-cd meta-nxp && git checkout wrynose-temp-clean
+cd meta-nxp && git checkout wrynose
 ```
 
 Set up build environment for selected machine:
@@ -185,20 +185,33 @@ recipes-phosphor/      OpenBMC phosphor services
 
 ### Kernel Patches (`recipes-kernel/linux/files/`)
 
-| Patch | Platform | Description |
+Patches are applied per-machine via `SRC_URI` overrides in
+`recipes-kernel/linux/linux-nxp_git.bb`. The "Applied to" column reflects
+those overrides (`evb-imx*` machines and the `mx943-nxp-bsp` / `mx95-nxp-bsp`
+BSP overrides used for the iKVM PCIe EP group).
+
+| Patch | Applied to | Description |
 |---|---|---|
-| `0001-openbmc-imx91-imx93-support` | imx91/93 | OpenBMC DTS + Makefile |
-| `0002-P3T2030-temperature-sensor-imx93` | imx91/93 | P3T2030 sensor driver |
-| `0003-imx93-usb-peripheral-mode` | imx91/93 | USB peripheral mode |
-| `0004-imx943-local-display` | imx943 | DCIF local display |
-| `0005-imx943-antmicro-dc-scm-dts` | imx943 | Antmicro board DTS |
-| `0006-openbmc-imx95-frdm-support` | imx95 | OpenBMC DTS + Makefile |
-| `0010-ikvm-pcie-ep-drivers` | imx943/95 | iKVM PCIe EP drivers |
-| `0011-ikvm-drm-dpu95-bridge` | imx943/95 | iKVM DRM/DPU95/bridge |
-| `0012-ikvm-dts` | imx943/95 | iKVM DTS/Makefile |
-| `0013-drm-imx-dpu95-STRIDE_OVERRIDE` | imx943/95 | DPU95 stride property |
-| `0014-V4L2-bridge-driver` | imx943/95 | V4L2 PCIe bridge |
-| `0015-drm-bridge-lt9611uxc-EDID` | imx943/95 | lt9611uxc EDID support |
+| `0004-ikvm-pcie-ep-local-display-remote-kvm-imx95-6.18` | imx943/95 | iKVM PCIe EP local display + remote KVM base support |
+| `0005-openbmc-imx91-imx93-support` | imx91/93 | OpenBMC DTS + Makefile |
+| `0006-P3T2030-temperature-sensor-imx93` | imx91/93 | P3T2030 temperature sensor driver |
+| `0007-imx93-usb-peripheral-mode` | imx91/93 | USB peripheral mode |
+| `0008-imx943-local-display` | imx943 | DCIF local display |
+| `0009-imx943-antmicro-dc-scm-dts` | imx943 | Antmicro DC-SCM board DTS |
+| `0010-openbmc-imx95-frdm-support` | imx95 | OpenBMC DTS + Makefile |
+| `0011-media-ox05b1s-fix-variable-declaration-after-label` | all | ox05b1s build fix (decl after case label) |
+| `0012-media-stream2v4l2-fix-vb2-release-and-resolution-upd` | imx943/95 | stream2v4l2 vb2 release + resolution update fix |
+| `0013-media-stream2v4l2-use-DPU95-blit-engine-for-zero-cop` | imx943/95 | stream2v4l2 DPU95 blit-engine zero-copy capture |
+| `0014-meta-nxp-media-stream2v4l2-add-i.MX94-support-and-fi` | imx943/95 | stream2v4l2 i.MX94 support + 4K display fix |
+| `0015-PCI-endpoint-add-alloc_bar-free_bar-ops-to-pci_epf_o` | imx943/95 | Add alloc_bar/free_bar ops to pci_epf_ops |
+| `0016-PCI-endpoint-core-restore-generic-BAR-alloc-remove-V` | imx943/95 | Restore generic BAR alloc, remove VGA-specific hacks |
+| `0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i` | imx943/95 | New standalone pci-epf-imx9-vga driver for iKVM |
+| `0018-PCI-endpoint-Kconfig-Makefile-add-PCI_EPF_IMX9_VGA-e` | imx943/95 | Kconfig/Makefile entry for PCI_EPF_IMX9_VGA |
+
+> **Note:** The `0004` and `0012`–`0018` patches form the iKVM PCIe EP display
+> group, applied only on the `mx943-nxp-bsp` and `mx95-nxp-bsp` BSP overrides.
+> Kernel config deltas are supplied via `openbmc_common.cfg` (all platforms)
+> and `openbmc_imx943_imx95.cfg` (i.MX943/i.MX95 only) rather than patches.
 
 ---
 
