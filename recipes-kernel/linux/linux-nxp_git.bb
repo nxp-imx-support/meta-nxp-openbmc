@@ -70,6 +70,7 @@ IKVM_PCIE_EP_PATCHES = " \
     file://0016-PCI-endpoint-core-restore-generic-BAR-alloc-remove-V.patch \
     file://0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i.patch  \
     file://0018-PCI-endpoint-Kconfig-Makefile-add-PCI_EPF_IMX9_VGA-e.patch \
+    file://0019-PCI-endpoint-Add-iKVM-HID-input-support-to-i.MX9-VGA.patch \
 "
 
 # Apply common cfg + per-platform patches via MACHINE override
