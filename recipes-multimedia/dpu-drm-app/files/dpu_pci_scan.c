@@ -15,6 +15,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <linux/netlink.h>
 
 #include <xf86drm.h>
@@ -65,7 +66,8 @@ struct drm_imx_dpu_get_dma_address {
     __u64 dma_addr;
 };
 
-#define DRM_IOCTL_IMX_DPU_GET_DMA_ADDRESS    DRM_IOWR(0x44, struct drm_imx_dpu_get_dma_address)
+#define DRM_IOCTL_IMX_DPU_GET_DMA_ADDRESS \
+    DRM_IOWR(0x44, struct drm_imx_dpu_get_dma_address)
 
 static int is_display_connected(void);
 
@@ -166,6 +168,7 @@ static void create_fb(int w, int h)
     map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mreq.offset);
     if (map == MAP_FAILED) {
         log_error("mmap");
+        map = NULL;
         return;
     }
 
@@ -252,6 +255,8 @@ static void init_display()
 
     log_error("no display");
 
+    return;
+
 props:
 
     p_fb      = get_prop(plane_id, DRM_MODE_OBJECT_PLANE, "FB_ID");
@@ -305,6 +310,7 @@ static void atomic_modeset(int src_w, int src_h)
 
     if (drmModeCreatePropertyBlob(fd, &mode, sizeof(mode), &blob_id)) {
         log_error("blob");
+        drmModeAtomicFree(req);
         return;
     }
 
@@ -436,7 +442,7 @@ static int wait_for_fb0(void)
 {
     int retry = 50;
 
-    while (retry--) {
+    while (retry-- && running) {
 
         if (access("/dev/fb0", F_OK) == 0) {
 
@@ -478,7 +484,13 @@ static void reinit_display(void)
         handle = 0;
     }
 
+    if (!running)
+        return;
+
     if (wait_for_fb0() < 0)
+        return;
+
+    if (!running)
         return;
 
     init_display();
@@ -492,7 +504,8 @@ static void reinit_display(void)
         last_h = default_h;
     }
 
-    atomic_modeset(last_w, last_h);
+    if (running)
+        atomic_modeset(last_w, last_h);
 
     printf("[HOTPLUG] done\n");
 }
@@ -520,7 +533,9 @@ static void handle_event(char *buf, int len)
                 printf("[UEVENT] %dx%d\n", w, h);
                 update_last_resolution(w, h);
                 save_resolution();
-                atomic_modeset(w, h);
+
+                if (running)
+                    atomic_modeset(w, h);
                 /* Update stream2v4l2 resolution via sysfs */
                 {
                     char val[32];
@@ -536,7 +551,7 @@ static void handle_event(char *buf, int len)
         i += strlen(msg) + 1;
     }
 
-    if (hotplug) {
+    if (hotplug && running) {
 
         printf("[HOTPLUG DETECTED]\n");
         if (is_display_connected()) {
@@ -570,88 +585,161 @@ static void uevent_loop()
     struct sockaddr_nl addr = {0};
 
     int sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_KOBJECT_UEVENT);
+    if (sock < 0)
+        exit_app("netlink socket");
 
     addr.nl_family = AF_NETLINK;
     addr.nl_pid = getpid();
     addr.nl_groups = 1;
 
-    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)))
+    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr))) 
+    {
+        close(sock);
         exit_app("netlink");
+    }
+
+    struct timeval tv = {
+        .tv_sec = 1,
+        .tv_usec = 0
+    };
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        close(sock);
+        exit_app("SO_RCVTIMEO");
+    }
 
     char buf[UEVENT_BUF];
 
     printf("[UEVENT] listening\n");
 
     while (running) {
+
         int len = recv(sock, buf, sizeof(buf), 0);
-        if (len > 0)
+        if (len > 0) {
             handle_event(buf, len);
+        } else if (len < 0) {
+            if (errno == EAGAIN ||
+                errno == EWOULDBLOCK) {
+
+                continue;
+            }
+
+            if (errno == EINTR)
+                continue;
+
+            perror("[UEVENT] recv");
+            break;
+        }
     }
+
+    close(sock);
+    printf("[UEVENT] stopped\n");
 }
 
 static void cleanup()
 {
     save_resolution();
-    restore_default();
 
-    if (map && map != MAP_FAILED)
+    if (map && map != MAP_FAILED) {
         munmap(map, size);
+        map = NULL;
+    }
 
-    if (fb_id)
+    if (fb_id) {
         drmModeRmFB(fd, fb_id);
+        fb_id = 0;
+    }
 
     if (handle) {
         struct drm_mode_destroy_dumb d = {0};
         d.handle = handle;
         ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &d);
+        handle = 0;
     }
 
-    if (fd >= 0)
+    if (fd >= 0) {
         close(fd);
+        fd = -1;
+    }
 
     printf("[APP] cleaned\n");
 }
 
 static void stop_handler(int sig)
 {
+    
+    (void)sig;
     running = 0;
-    cleanup();
-    printf("\n[SYSTEMD] stop requested\n");
 }
 
 int main()
 {
-    while (access(DRM_DEV, F_OK) != 0)
+    /* Wait for /dev/dri/card0 to appear */
+    while (running && access(DRM_DEV, F_OK) != 0)
         usleep(100000);
 
     struct sigaction sa = {0};
     sa.sa_handler = stop_handler;
+    sigemptyset(&sa.sa_mask);
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
 
-    fd = open(DRM_DEV, O_RDWR | O_CLOEXEC);
-    if (fd < 0)
-        log_error("open drm");
+    if (!running)
+        return 0;
 
-    init_display();
-    
+    /* Wait for /dev/fb0 — ensures DRM subsystem is fully initialised */
+    if (wait_for_fb0() < 0) {
+        printf("[MAIN] /dev/fb0 not ready, aborting\n");
+        return 1;
+    }
+
+    if (!running)
+        return 0;
+
+    fd = open(DRM_DEV, O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+        log_error("open drm");
+        return 1;
+    }
+
+    /* Retry init_display() until connector is fully enumerated */
+    int retries = 20;
+    while (running && retries-- > 0) {
+        init_display();
+        if (conn_id && crtc_id && plane_id)
+            break;
+        printf("[MAIN] display not ready yet, retrying...\n");
+        usleep(500000); /* 500 ms */
+    }
+
+    if (!conn_id || !crtc_id || !plane_id) {
+        printf("[MAIN] display init failed after retries\n");
+        close(fd);
+        return 1;
+    }
+
     load_resolution();
 
     create_fb(mode.hdisplay, mode.vdisplay);
 
-	/* Update stream2v4l2 resolution via sysfs */
-	{
-	    char val[32];
-	    FILE *f;
-	    snprintf(val, sizeof(val), "%dx%d:%d", last_w, last_h, (int)last_w * 4);
-	    if ((f = fopen("/sys/module/stream2v4l2/parameters/resolution", "w"))) {
-		fputs(val, f); fclose(f);
-	    }
-	}
+    /* Update stream2v4l2 resolution via sysfs */
+    {
+        char val[32];
+        FILE *f;
+        snprintf(val, sizeof(val), "%dx%d:%d", last_w, last_h, (int)last_w * 4);
+        if ((f = fopen("/sys/module/stream2v4l2/parameters/resolution", "w")))
+        {
+            fputs(val, f);
+            fclose(f);
+        }
+    }
 
-    atomic_modeset(last_w, last_h);
+    if (running) {
+        atomic_modeset(last_w, last_h);
+        uevent_loop();
+    }
 
-    uevent_loop();
+    cleanup();
 
     return 0;
 }

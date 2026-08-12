@@ -71,6 +71,7 @@ IKVM_PCIE_EP_PATCHES = " \
     file://0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i.patch  \
     file://0018-PCI-endpoint-Kconfig-Makefile-add-PCI_EPF_IMX9_VGA-e.patch \
     file://0019-PCI-endpoint-Add-iKVM-HID-input-support-to-i.MX9-VGA.patch \
+    file://0020-PCI-endpoint-Add-configurable-iKVM-display-and-KVM-m.patch \
 "
 
 # Apply common cfg + per-platform patches via MACHINE override

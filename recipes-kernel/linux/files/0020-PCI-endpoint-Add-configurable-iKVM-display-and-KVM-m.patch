@@ -1,0 +1,2110 @@
+From 69f6c5eb7ca042ecb42787cf733f3678c08ab945 Mon Sep 17 00:00:00 2001
+From: Shreyash Damanwala <shreyash.damanwala@nxp.com>
+Date: Mon, 10 Aug 2026 13:51:26 +0530
+Subject: [PATCH] PCI: endpoint: Add configurable iKVM display and KVM
+ modes
+
+Add runtime KVM configuration support to the i.MX9 VGA PCIe endpoint function.
+
+* Read display resolution and KVM mode from /etc/kvm.conf.
+* Support 1080p and 4K display configurations.
+* Select the appropriate fallback EDID based on the configured mode.
+* Parse monitor EDID to determine the maximum supported resolution.
+* Detect ADV7535 and LT9611UXC display bridges from device tree.
+* Select the appropriate Option ROM for PCIe video or PCIe KVM mode.
+* Initialize the HID BAR only when PCIe KVM mode is enabled.
+* Restart the obmc-ikvm service after endpoint initialization.
+* Move the i.MX9 VGA EPF build target into the iKVM subdirectory.
+
+Upstream-Status: Pending
+Signed-off-by: Shreyash Damanwala <shreyash.damanwala@nxp.com>
+---
+ drivers/pci/endpoint/functions/Kconfig        |  21 +-
+ drivers/pci/endpoint/functions/Makefile       |   3 +-
+ .../pci/endpoint/functions/imx9_ikvm/Kconfig  |  18 +-
+ .../pci/endpoint/functions/imx9_ikvm/Makefile |  11 +-
+ .../functions/imx9_ikvm/pci-epf-hid.h         | 257 ++++++++
+ .../{ => imx9_ikvm}/pci-epf-imx9-vga.c        | 587 +++++++++++++++---
+ .../functions/imx9_ikvm/pcie-abs-mouse.c      |  25 +-
+ .../functions/imx9_ikvm/pcie-kvm-hid.c        | 275 ++++++--
+ .../functions/imx9_ikvm/pcie-local-keyboard.c |  33 +-
+ .../functions/imx9_ikvm/pcie-rel-mouse.c      |  90 +--
+ .../functions/imx9_ikvm/pcie_keyboard.c       |   8 +-
+ include/linux/pci-epf-hid.h                   | 162 -----
+ 12 files changed, 1102 insertions(+), 388 deletions(-)
+ create mode 100644 drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-hid.h
+ rename drivers/pci/endpoint/functions/{ => imx9_ikvm}/pci-epf-imx9-vga.c (65%)
+ delete mode 100644 include/linux/pci-epf-hid.h
+
+diff --git a/drivers/pci/endpoint/functions/Kconfig b/drivers/pci/endpoint/functions/Kconfig
+index 613515d5ae66..b304bc487dfd 100644
+--- a/drivers/pci/endpoint/functions/Kconfig
++++ b/drivers/pci/endpoint/functions/Kconfig
+@@ -58,13 +58,20 @@ config PCI_EPF_IMX9_VGA
+ 	  class display device for iKVM (IP-based KVM over PCIe) use cases.
+ 
+ 	  Provides:
+-	    - BAR1: EDID (read from DRM sysfs or 4K fallback blob)
+-	    - BAR2: 64MB VRAM (ioremap_wc, DT reserved-memory node "vram")
+-		- BAR3: 32KB PCIe HID Ring buffer
+-	    - BAR4: DPU95 register space (ioremap at 0x4b400000)
+-	    - Option ROM via firmware loader (OptionRom.rom)
+-	    - Resolution change uevent to userspace
+-	    - pci_epf_get_vram_fb_address() for stream2v4l2
++	    - BAR0 (0x10): 512B control registers (pcitest wire-format compatible)
++	    - BAR1 (0x14): 512B EDID (DRM sysfs or 1080p/4K fallback blob)
++	    - BAR2 (0x18): 64MB VRAM framebuffer (ioremap_wc, DT reserved-memory "vram")
++	    - BAR3 (0x1C): 32KB PCIe HID ring buffer (keyboard + mouse reports)
++	    - BAR4 (0x20): 4MB DPU95 register space (ioremap at 0x4b400000)
++	    - BAR5 (0x24): 1MB reserved
++	    - ROM  (0x30): Expansion ROM BAR (PCI_ROM_ADDRESS, not BAR6)
++	                   Loaded via request_firmware(), min 64KB, pow2-aligned:
++	                    pcie_video_usb_hid -> OptionRom.rom
++	                    pcie_kvm          -> OptionRom_pcie_kvm.rom
++	    - Resolution change uevent to userspace (RESOLUTION=WxH)
++	    - KVM ready uevent to userspace (KVM_EVENT=kvm_ready)
++	    - pci_epf_get_vram_fb_address() exported for stream2v4l2
++	    - pci_epf_get_hid_address() exported for pcie-kvm-hid
+ 
+ 	  This driver is independent of PCI_EPF_TEST.
+ 
+diff --git a/drivers/pci/endpoint/functions/Makefile b/drivers/pci/endpoint/functions/Makefile
+index 16e89fc6d3fb..37b55d3b4251 100644
+--- a/drivers/pci/endpoint/functions/Makefile
++++ b/drivers/pci/endpoint/functions/Makefile
+@@ -7,4 +7,5 @@ obj-$(CONFIG_PCI_EPF_TEST)		+= pci-epf-test.o
+ obj-$(CONFIG_PCI_EPF_NTB)		+= pci-epf-ntb.o
+ obj-$(CONFIG_PCI_EPF_VNTB) 		+= pci-epf-vntb.o
+ obj-$(CONFIG_PCI_EPF_MHI)		+= pci-epf-mhi.o
+-obj-$(CONFIG_PCI_EPF_IMX9_VGA)	+= pci-epf-imx9-vga.o imx9_ikvm/
++obj-$(CONFIG_PCI_EPF_IMX9_VGA)	+= imx9_ikvm/
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/Kconfig b/drivers/pci/endpoint/functions/imx9_ikvm/Kconfig
+index e9a61550a33e..f7acbde196d6 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/Kconfig
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/Kconfig
+@@ -5,13 +5,15 @@
+ #
+ 
+ config PCIE_KVM_INPUT
+-    tristate "PCIe EP capture HID input from remote and local input device (iKVM)"
+-    depends on PCI_EPF_IMX9_VGA
+-    default m
+-    help
+-      Say Y or M here to expose the i.MX9 PCIe endpoint HID device
+-      for OpenBMC iKVM.
++	tristate "PCIe EP capture HID input from remote and local input device (iKVM)"
++	depends on PCI_EPF_IMX9_VGA
++	depends on HID
++	default y
++	help
++	  Say Y or M here to expose the i.MX9 PCIe endpoint HID device
++	  for OpenBMC iKVM.
+ 
+-      This driver reads the HID data from hid ring buffer and write it to endpoint bar3 
++	  This driver reads HID data from the HID ring buffer and writes it to endpoint BAR3.
++
++	  Requires CONFIG_PCI_EPF_IMX9_VGA=y or =m.
+ 
+-      Requires CONFIG_PCI_EPF_VGA=y or =m.
+\ No newline at end of file
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/Makefile b/drivers/pci/endpoint/functions/imx9_ikvm/Makefile
+index e1109b8f4a39..fbde35f871af 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/Makefile
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/Makefile
+@@ -4,10 +4,13 @@
+ # Makefile for PCI KVM input
+ #
+ 
++obj-$(CONFIG_PCI_EPF_IMX9_VGA)	+= pci-epf-imx9-vga.o
++
+ obj-$(CONFIG_PCIE_KVM_INPUT) += pcie-input.o
+ 
+ pcie-input-y := pcie-kvm-hid.o \
+-        		pcie_keyboard.o \
+-				pcie-rel-mouse.o \
+-        		pcie-abs-mouse.o \
+-        		pcie-local-keyboard.o
+\ No newline at end of file
++		pcie_keyboard.o \
++		pcie-rel-mouse.o \
++		pcie-abs-mouse.o \
++		pcie-local-keyboard.o
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-hid.h b/drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-hid.h
+new file mode 100644
+index 000000000000..7200af9f9f3a
+--- /dev/null
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-hid.h
+@@ -0,0 +1,257 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright 2026 NXP
++ *
++ * PCI Endpoint HID Function with pci-epf-imx9-vga function
++ *
++ * This header defines the common data structures and APIs used by the
++ * PCI Endpoint HID function for handling keyboard and mouse reports.
++ *
++ * Header location rationale (moved from include/linux/ to driver-private):
++ *   1. APIs only used within imx9_ikvm — not a public API
++ *   2. Singleton g_hid global makes it unsuitable for include/linux/
++ *
++ * BAR3 ABI contract (shared with host-side imx-pcie-rc-hid.c):
++ *   - STABLE ABI — EP and RC must agree on field offsets
++ *   - Host driver redefines structures locally (different kernel, RC side)
++ *   - static_assert() guards catch EP-side layout changes at compile time
++ *   - ABI sizes: hid_desc=80B, hid_ring_header=16B, 256 entries
++ *   - BAR3: [hid_ring_header @ 0x0000][hid_desc[256] @ 0x0010]
++ *
++ * Singleton constraint:
++ *   - Only one EP instance at a time
++ *   - epf_hid_attach() enforces with WARN_ON + -EBUSY
++ *   - Future: pass struct epf_hid * through call chain
++ *
++ * Initialization model:
++ *
++ * The pcie-input module registers input handlers and cdevs at module_init
++ * time. The HID ring is NOT initialized at module_init. Instead, the VGA
++ * EPF driver calls epf_hid_attach() once BAR3 is mapped in epc_init, and
++ * epf_hid_detach() when the BAR is torn down in epc_deinit / unbind.
++ */
++
++#ifndef __PCI_EPF_HID_H__
++#define __PCI_EPF_HID_H__
++
++#include <linux/io.h>
++#include <linux/types.h>
++#include <linux/spinlock.h>
++
++/*
++ * BAR3 size reserved for the PCI Endpoint HID function.
++ *
++ * The actual PCI BAR must be configured to be at least this size.
++ */
++#define HID_BAR3_SIZE		32768U
++
++/*
++ * HID device types supported by the PCI Endpoint HID function.
++ */
++#define HID_TYPE_KEYBOARD  1
++#define HID_TYPE_REL_MOUSE 2
++#define HID_TYPE_ABS_MOUSE 3
++
++/*
++ * Number of HID descriptors that can be stored in the ring buffer.
++ */
++#define HID_RING_SIZE 256U
++
++/*
++ * HID event descriptor stored in the shared BAR3 ring.
++ *
++ * This structure is part of the BAR3 shared-memory ABI.
++ *
++ * @type:  HID device/report type.
++ * @len:   Length of valid data in @data.
++ * @seq:   Sequence number of the report.
++ * @flags: Report/event flags.
++ * @data:  HID report payload.
++ *
++ * Size: 80 bytes.
++ */
++struct hid_desc {
++	u32 type;
++	u32 len;
++	u32 seq;
++	u32 flags;
++	u8 data[64];
++} __packed;
++
++/*
++ * Shared HID ring header stored at BAR3 + 0x0000.
++ *
++ * BAR3 layout:
++ *
++ *   BAR3 + 0x0000 : struct hid_ring_header
++ *   BAR3 + 0x0010 : struct hid_desc[HID_RING_SIZE]
++ *
++ * Ownership:
++ *
++ *   prod - endpoint producer index
++ *   cons - host consumer index
++ *   seq  - endpoint sequence number
++ *
++ * The host must update cons after it has consumed descriptors.
++ *
++ * Size: 16 bytes.
++ */
++struct hid_ring_header {
++	u32 prod;
++	u32 cons;
++	u32 seq;
++	u32 reserved;
++} __packed;
++
++/*
++ * Total size occupied by the HID shared-memory region.
++ */
++#define HID_RING_BYTES		(sizeof(struct hid_desc) * HID_RING_SIZE)
++#define HID_SHARED_SIZE		(sizeof(struct hid_ring_header) + \
++				 HID_RING_BYTES)
++
++/*
++ * Private state for the PCI Endpoint HID function.
++ *
++ * The producer, consumer and sequence values are NOT stored here.
++ * They are stored in the shared BAR3 header so that the PCIe host
++ * can observe/update them.
++ *
++ * @lock: Protects endpoint-side producer updates.
++ * @bar:  BAR3 HID shared-memory base.
++ * @attached: 1=attached, 0=detached; singleton guard
++ * @hdr:  Shared BAR3 ring header.
++ * @ring: Shared BAR3 descriptor ring.
++ */
++struct epf_hid {
++	spinlock_t lock;
++	void __iomem *bar;
++    atomic_t attached;
++	struct hid_ring_header __iomem *hdr;
++	struct hid_desc __iomem *ring;
++};
++
++/*
++ * Relative mouse HID report.
++ *
++ * @buttons: Current mouse button state.
++ * @x:       Relative movement along the X axis.
++ * @y:       Relative movement along the Y axis.
++ * @wheel:   Relative wheel movement.
++ */
++struct hid_rel_mouse_report {
++	u8 buttons;
++	s8 x;
++	s8 y;
++	s8 wheel;
++} __packed;
++
++/*
++ * Absolute mouse HID report.
++ *
++ * @buttons: Current mouse button state.
++ * @x:       Absolute X coordinate.
++ * @y:       Absolute Y coordinate.
++ * @wheel:   Relative wheel movement.
++ */
++struct hid_abs_mouse_report {
++	u8 buttons;
++	u16 x;
++	u16 y;
++	s8 wheel;
++} __packed;
++
++/*
++ * USB/HID boot-protocol keyboard report.
++ *
++ * @modifier: Modifier key bitmap (Ctrl, Shift, Alt, etc.).
++ * @reserved: Reserved byte required by the standard keyboard report.
++ * @keycode:  Up to six simultaneously pressed key codes.
++ */
++struct hid_keyboard_report {
++	u8 modifier;
++	u8 reserved;
++	u8 keycode[6];
++} __packed;
++
++/*
++ * Relative mouse interface initialization and cleanup.
++ */
++int rel_mouse_init(void);
++void rel_mouse_exit(void);
++
++/*
++ * Send a relative mouse report through the PCI Endpoint HID function.
++ *
++ * @rpt: Pointer to the relative mouse report.
++ *
++ * Return: 0 on success, or a negative error code on failure.
++ */
++int epf_hid_send_rel_mouse(struct hid_rel_mouse_report *rpt);
++
++/*
++ * Absolute mouse interface initialization and cleanup.
++ */
++int abs_mouse_init(void);
++void abs_mouse_exit(void);
++
++/*
++ * Send an absolute mouse report through the PCI Endpoint HID function.
++ *
++ * @rpt: Pointer to the absolute mouse report.
++ *
++ * Return: 0 on success, or a negative error code on failure.
++ */
++int epf_hid_send_abs_mouse(struct hid_abs_mouse_report *rpt);
++
++/*
++ * Remote/PCI Endpoint keyboard interface initialization and cleanup.
++ */
++int keyboard_init(void);
++void keyboard_exit(void);
++
++/*
++ * Local keyboard interface initialization and cleanup.
++ */
++int local_keyboard_init(void);
++void local_keyboard_exit(void);
++
++/*
++ * Send a keyboard HID report through the PCI Endpoint HID function.
++ *
++ * @rpt: Pointer to the keyboard report.
++ *
++ * Return: 0 on success, or a negative error code on failure.
++ */
++int epf_hid_send_keyboard(struct hid_keyboard_report *rpt);
++
++/*
++ * epf_hid_attach() - attach the HID ring to a mapped BAR3 region
++ * @bar: virtual __iomem address of the BAR3 shared-memory region
++ *
++ * Called by the VGA EPF driver from epc_init() after BAR3 is mapped.
++ * Initializes the shared ring header and registers input handlers.
++ *
++ * Return: 0 on success, negative error code on failure.
++ */
++int epf_hid_attach(void __iomem *bar);
++
++/*
++ * epf_hid_detach() - detach the HID ring and stop input handlers
++ *
++ * Called by the VGA EPF driver from epc_deinit() / unbind() before
++ * BAR3 is unmapped. Clears all ring pointers so in-flight report
++ * submissions return -ENODEV instead of accessing freed memory.
++ */
++void epf_hid_detach(void);
++
++/*
++ * ABI size assertions — catch accidental struct layout changes.
++ */
++static_assert(sizeof(struct hid_desc) == 80,
++	      "hid_desc ABI size changed — update host driver");
++static_assert(sizeof(struct hid_ring_header) == 16,
++	      "hid_ring_header ABI size changed — update host driver");
++
++#endif /* __PCI_EPF_HID_H__ */
++
+diff --git a/drivers/pci/endpoint/functions/pci-epf-imx9-vga.c b/drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-imx9-vga.c
+similarity index 65%
+rename from drivers/pci/endpoint/functions/pci-epf-imx9-vga.c
+rename to drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-imx9-vga.c
+index fcf0a00cf6b1..7a56f8f3c99d 100644
+--- a/drivers/pci/endpoint/functions/pci-epf-imx9-vga.c
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pci-epf-imx9-vga.c
+@@ -1,19 +1,26 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /*
++ * Copyright 2026 NXP
++ *
+  * PCIe Endpoint VGA Class Display Driver for i.MX95 iKVM
+  *
+  * Implements a PCI_BASE_CLASS_DISPLAY endpoint function driver,
+  * separated from the PCI EPF test framework.
+  *
+- * BAR layout:
+- *   BAR0 - 512B   : control registers (compatible with pcitest wire format)
+- *   BAR1 - 512B   : EDID (populated from DRM sysfs or fallback 4K blob)
+- *   BAR2 - 64MB   : VRAM framebuffer (ioremap_wc, DT reserved-memory "vram")
+- *   BAR3 - 32KB   : PCIe HID Ring buffer
+- *   BAR4 - 4MB    : DPU95 register space (ioremap at DPU95_ADDRESS_SPACE)
+- *   BAR5 - 1MB    : reserved
++ * BAR layout (PCI Type-0 config space):
+  *
+- * Copyright 2026 NXP
++ *   Offset 0x10  BAR0 - 512B   : control registers (pcitest wire-format compatible)
++ *   Offset 0x14  BAR1 - 512B   : EDID (DRM sysfs or 1080p/4K fallback blob)
++ *   Offset 0x18  BAR2 - 64MB   : VRAM framebuffer (ioremap_wc, DT "vram" node)
++ *   Offset 0x1C  BAR3 - 32KB   : PCIe HID ring buffer (keyboard + mouse reports)
++ *   Offset 0x20  BAR4 - 4MB    : DPU95 register space (ioremap at DPU95_ADDRESS_SPACE)
++ *   Offset 0x24  BAR5 - 1MB    : reserved
++ *
++ *   Offset 0x30  PCI_ROM_ADDRESS (Expansion ROM BAR, NOT BAR6):
++ *                  Size: rounded up to next power-of-2, minimum 64KB per PCI spec.
++ *                  Loaded via request_firmware(), selected by kvm_mode:
++ *                   pcie_video_usb_hid -> OptionRom.rom
++ *                   pcie_kvm          -> OptionRom_pcie_kvm.rom
+  */
+ 
+ #include <linux/crc32.h>
+@@ -24,13 +31,11 @@
+ #include <linux/of_address.h>
+ #include <linux/ioport.h>
+ #include <linux/module.h>
++#include <linux/moduleparam.h>
+ #include <linux/msi.h>
+ #include <linux/slab.h>
+ #include <linux/pci_ids.h>
+ #include <linux/random.h>
+-#include <linux/fs.h>
+-#include <linux/file.h>
+-#include <linux/uaccess.h>
+ #include <linux/kernel.h>
+ #include <linux/fb.h>
+ #include <linux/device.h>
+@@ -44,6 +49,10 @@
+ 
+ #include <linux/dma-mapping.h>
+ 
++#if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)
++#include "pci-epf-hid.h"
++#endif
++
+ /* DPU95 register space physical base address on i.MX95 */
+ #define DPU95_ADDRESS_SPACE		0x4b400000UL
+ 
+@@ -105,6 +114,86 @@ static uint64_t    vram_fb_addr;
+ 
+ static struct workqueue_struct *kpciimx9vga_workqueue;
+ 
++/*
++ * param_lock: protects param_kvm_mode and param_display_resolution against
++ * concurrent sysfs writes after module load.
++ */
++static DEFINE_MUTEX(param_lock);
++
++/* ------------------------------------------------------------------ */
++/* Module parameters: KVM configuration                                */
++/* ------------------------------------------------------------------ */
++
++/*
++ * kvm_mode: selects the KVM operating mode.
++ *
++ *   "pcie_kvm"            - Full PCIe KVM mode (video + PCIe HID ring)
++ *   "pcie_video_usb_hid"  - PCIe video with USB HID redirection (default)
++ *
++ * Set at module load time:
++ *   modprobe pci-epf-imx9-vga kvm_mode=pcie_kvm
++ * or via kernel command line:
++ *   pci_epf_imx9_vga.kvm_mode=pcie_kvm
++ * or at runtime via sysfs:
++ *   echo pcie_kvm > /sys/module/pci_epf_imx9_vga/parameters/kvm_mode
++ */
++static char param_kvm_mode[32] = "pcie_video_usb_hid";
++
++/*
++ * display_resolution: selects the display output resolution.
++ *
++ *   "1080p" - 1920x1080 FHD (default)
++ *   "4k"    - 3840x2160 UHD
++ *
++ * Set at module load time:
++ *   modprobe pci-epf-imx9-vga display_resolution=4k
++ * or via kernel command line:
++ *   pci_epf_imx9_vga.display_resolution=4k
++ * or at runtime via sysfs:
++ *   echo 4k > /sys/module/pci_epf_imx9_vga/parameters/display_resolution
++ */
++static char param_display_resolution[32] = "1080p";
++
++/**
++ * enum display_mode - supported display output resolutions
++ * @DISPLAY_1080P: Configure the display for 1080p (FHD) resolution.
++ * @DISPLAY_4K: Configure the display for 4K resolution.
++ */
++enum display_mode {
++	DISPLAY_1080P,
++	DISPLAY_4K,
++};
++
++/**
++ * enum kvm_mode - supported KVM operating modes
++ * @KVM_MODE_PCIE_VIDEO_USB_HID: PCIe video with USB HID redirection.
++ * @KVM_MODE_PCIE_KVM: Full PCIe KVM mode.
++ */
++enum imx9_kvm_mode {
++	KVM_MODE_PCIE_VIDEO_USB_HID,
++	KVM_MODE_PCIE_KVM,
++};
++
++/**
++ * struct kvm_config - KVM configuration parameters
++ * @display: Selected display resolution.
++ * @mode: Selected KVM operating mode.
++ */
++struct kvm_config {
++	enum display_mode display;
++	enum imx9_kvm_mode mode;
++};
++
++/**
++ * struct edid_resolution - display resolution described by EDID
++ * @width: Horizontal resolution in pixels.
++ * @height: Vertical resolution in pixels.
++ */
++struct edid_resolution {
++	u16 width;
++	u16 height;
++};
++
+ /**
+  * struct pci_epf_imx9_vga - private state for the VGA EPF driver instance
+  * @reg:          virtual addresses of each BAR's register space
+@@ -114,6 +203,8 @@ static struct workqueue_struct *kpciimx9vga_workqueue;
+  * @msix_table_offset: offset of MSI-X table within ctrl_reg_bar
+  * @cmd_handler:  delayed work for polling the command register
+  * @epc_features: EPC feature set for this function
++ * @cfg: Global KVM configuration instance used to store the current
++ *       display resolution and KVM operating mode.
+  */
+ struct pci_epf_imx9_vga {
+ 	void				*reg[PCI_STD_NUM_BARS];
+@@ -123,6 +214,10 @@ struct pci_epf_imx9_vga {
+ 	size_t				 msix_table_offset;
+ 	struct delayed_work		 cmd_handler;
+ 	const struct pci_epc_features	*epc_features;
++	struct kvm_config cfg;
++#if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)	
++	atomic_t hid_attached;
++#endif	
+ };
+ 
+ /**
+@@ -164,17 +259,54 @@ static struct pci_epf_header imx9_vga_header = {
+  * BAR sizes:
+  *   BAR0 = 512B   (control regs)
+  *   BAR1 = 512B   (EDID)
+- *   BAR2 = 32MB   (VRAM - overridden by alloc_bar to DT size)
+- *   BAR3 = 32KB   (misc)
++ *   BAR2 = 64MB   (VRAM - overridden by alloc_bar to DT size)
++ *   BAR3 = 32KB   (PCIe HID ring buffer)
+  *   BAR4 = 4MB    (DPU95 regs)
+  *   BAR5 = 1MB    (reserved)
+  */
+-static size_t imx9_vga_bar_size[] = { 512, 512, 33554432, 32768, 4194304, 1048576 };
++static size_t imx9_vga_bar_size[] = { 512, 512, 67108864, 32768, 4194304, 1048576 };
+ 
+ /* ------------------------------------------------------------------ */
+-/* Default EDID fallback blob (max 4K resolution)                      */
++/* Default 1080P EDID                                                  */
+ /* ------------------------------------------------------------------ */
+-static unsigned char default_edid[256] = {
++static const unsigned char default_edid_1080p[256] = {
++	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
++	0x1e, 0x6d, 0x55, 0x5b, 0xd5, 0x56, 0x07, 0x00,
++	0x01, 0x21, 0x01, 0x03, 0x80, 0x30, 0x1b, 0x78,
++	0xea, 0x31, 0x35, 0xa5, 0x55, 0x4e, 0xa1, 0x26,
++	0x0c, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x71, 0x4f,
++	0x81, 0x80, 0x95, 0x00, 0xb3, 0x00, 0xa9, 0xc0,
++	0x81, 0x00, 0x81, 0xc0, 0x90, 0x40, 0x02, 0x3a,
++	0x80, 0x18, 0x71, 0x38, 0x2d, 0x40, 0x58, 0x2c,
++	0x45, 0x00, 0xe0, 0x0e, 0x11, 0x00, 0x00, 0x1e,
++	0x00, 0x00, 0x00, 0xfd, 0x00, 0x38, 0x4b, 0x1e,
++	0x55, 0x12, 0x00, 0x0a, 0x20, 0x20, 0x20, 0x20,
++	0x20, 0x20, 0x00, 0x00, 0x00, 0xfc, 0x00, 0x4c,
++	0x47, 0x20, 0x46, 0x55, 0x4c, 0x4c, 0x20, 0x48,
++	0x44, 0x0a, 0x20, 0x20, 0x00, 0x00, 0x00, 0xff,
++	0x00, 0x33, 0x30, 0x31, 0x4e, 0x54, 0x5a, 0x4e,
++	0x45, 0x34, 0x39, 0x38, 0x31, 0x0a, 0x01, 0xb3,
++	0x02, 0x03, 0x1b, 0xf1, 0x48, 0x90, 0x04, 0x03,
++	0x01, 0x12, 0x1f, 0x10, 0x13, 0x23, 0x09, 0x07,
++	0x07, 0x83, 0x01, 0x00, 0x00, 0x65, 0x03, 0x0c,
++	0x00, 0x10, 0x00, 0x02, 0x3a, 0x80, 0x18, 0x71,
++	0x38, 0x2d, 0x40, 0x58, 0x2c, 0x45, 0x00, 0xe0,
++	0x0e, 0x11, 0x00, 0x00, 0x1e, 0x2a, 0x44, 0x80,
++	0xa0, 0x70, 0x38, 0x27, 0x40, 0x30, 0x20, 0x35,
++	0x00, 0xe0, 0x0e, 0x11, 0x00, 0x00, 0x1e, 0x01,
++	0x1d, 0x00, 0x72, 0x51, 0xd0, 0x1e, 0x20, 0x6e,
++	0x28, 0x55, 0x00, 0xe0, 0x0e, 0x11, 0x00, 0x00,
++	0x1e, 0x8c, 0x0a, 0xd0, 0x8a, 0x20, 0xe0, 0x2d,
++	0x10, 0x10, 0x3e, 0x96, 0x00, 0xe0, 0x0e, 0x11,
++	0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00,
++	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4b
++};
++
++/* ------------------------------------------------------------------ */
++/* Default 4K EDID                                                     */
++/* ------------------------------------------------------------------ */
++static const unsigned char default_edid_4k[256] = {
+ 	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+ 	0x09, 0xd1, 0x49, 0x79, 0x45, 0x54, 0x00, 0x00,
+ 	0x03, 0x20, 0x01, 0x03, 0x80, 0x3e, 0x22, 0x78,
+@@ -208,11 +340,12 @@ static unsigned char default_edid[256] = {
+ 	0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+ 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb
+ };
++
+ /**
+- * @hid_addr: Virtual address of the shared memory region used for
+- *            USB HID report exchange between the endpoint and host.
++ * @hid_addr: Virtual __iomem address of the shared memory region used for
++ *            PCIe HID report exchange between the endpoint and host.
+  */
+-static void *hid_addr;
++static void __iomem *hid_addr;
+ 
+ /* ------------------------------------------------------------------ */
+ /* VRAM helpers                                                         */
+@@ -268,27 +401,6 @@ uint64_t pci_epf_get_vram_fb_address(void)
+ }
+ EXPORT_SYMBOL_GPL(pci_epf_get_vram_fb_address);
+ 
+-#if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)
+-/**
+- * pci_epf_get_hid_address() - Return the USB HID shared memory address
+- *
+- * Returns the virtual address of the shared memory region used for USB HID
+- * report exchange between the PCIe endpoint and the host. Returns %NULL if
+- * the HID memory has not been initialized.
+- *
+- * Exported for use by the PCIe KVM input driver.
+- */
+- 
+-void* pci_epf_get_hid_address(void)
+-{
+-	if (hid_addr)
+-		return READ_ONCE(hid_addr);
+-	else
+-		return NULL;
+-}
+-EXPORT_SYMBOL_GPL(pci_epf_get_hid_address);
+-#endif
+-
+ /* ------------------------------------------------------------------ */
+ /* Driver-specific BAR allocator (ops->alloc_bar / ops->free_bar)      */
+ /* ------------------------------------------------------------------ */
+@@ -390,11 +502,156 @@ static int epf_imx9_vga_read_edid_sysfs(u8 *buf)
+ 	return 0;
+ }
+ 
+-static void epf_imx9_vga_copy_edid_to_bar1(struct pci_epf_imx9_vga *epf_imx9_vga)
++static int epf_imx9_vga_read_kvm_config(struct kvm_config *cfg)
++{
++	char kvm_mode_buf[32];
++	char disp_res_buf[32];
++	char *kvm_mode;
++	char *disp_res;
++
++	/* Defaults */
++	cfg->display = DISPLAY_1080P;
++	cfg->mode    = KVM_MODE_PCIE_VIDEO_USB_HID;
++
++	/*
++	 * Copy params and strip trailing whitespace/newlines written by
++	 * userspace via sysfs (e.g. echo adds a trailing '\n').
++	 */
++	mutex_lock(&param_lock);
++	strscpy(kvm_mode_buf, param_kvm_mode, sizeof(kvm_mode_buf));
++	strscpy(disp_res_buf, param_display_resolution, sizeof(disp_res_buf));
++	mutex_unlock(&param_lock);
++
++	kvm_mode = strim(kvm_mode_buf);
++	disp_res = strim(disp_res_buf);
++
++	/*
++	 * Parse display_resolution module parameter.
++	 */
++	if (strcmp(disp_res, "4k") == 0) {
++		cfg->display = DISPLAY_4K;
++	} else if (strcmp(disp_res, "1080p") == 0) {
++		cfg->display = DISPLAY_1080P;
++	} else {
++		pr_warn("pci-epf-imx9-vga: unknown display_resolution=\"%s\", "
++			"defaulting to 1080p\n", disp_res);
++		cfg->display = DISPLAY_1080P;
++	}
++
++	/*
++	 * Parse kvm_mode module parameter.
++	 */
++	if (strcmp(kvm_mode, "pcie_kvm") == 0) {
++		cfg->mode = KVM_MODE_PCIE_KVM;
++	} else if (strcmp(kvm_mode, "pcie_video_usb_hid") == 0) {
++		cfg->mode = KVM_MODE_PCIE_VIDEO_USB_HID;
++	} else {
++		pr_warn("pci-epf-imx9-vga: unknown kvm_mode=\"%s\", "
++			"defaulting to pcie_video_usb_hid\n", kvm_mode);
++		cfg->mode = KVM_MODE_PCIE_VIDEO_USB_HID;
++	}
++
++	pr_info("===== KVM Configuration =====\n");
++	pr_info("Display Resolution : %s\n",
++		cfg->display == DISPLAY_4K ?
++		"4K (3840x2160)" : "1080p (1920x1080)");
++	pr_info("KVM Mode           : %s\n",
++		cfg->mode == KVM_MODE_PCIE_KVM ?
++		"PCIe KVM" : "PCIe Video + USB HID");
++	pr_info("=============================\n");
++
++	return 0;
++}
++
++static bool epf_imx9_vga_is_adv7535(void)
++{
++	struct device_node *np;
++
++	np = of_find_compatible_node(NULL, NULL, "adi,adv7535");
++	if (!np)
++		return false;
++
++	of_node_put(np);
++	return true;
++}
++
++static bool epf_imx9_vga_is_lt9611uxc(void)
++{
++	struct device_node *np;
++
++	np = of_find_compatible_node(NULL, NULL, "lontium,lt9611uxc");
++	if (!np)
++		return false;
++
++	of_node_put(np);
++	return true;
++}
++
++static void epf_imx9_vga_parse_dtd(const u8 *dtd, struct edid_resolution *max)
++{
++	u16 hactive, vactive;
++
++	if (dtd[0] == 0 && dtd[1] == 0)
++		return;
++
++	hactive = dtd[2] | ((dtd[4] & 0xF0) << 4);
++	vactive = dtd[5] | ((dtd[7] & 0xF0) << 4);
++
++	if ((u32)hactive * vactive > (u32)max->width * max->height) {
++		max->width = hactive;
++		max->height = vactive;
++	}
++}
++
++static struct edid_resolution epf_imx9_vga_get_max_resolution(const u8 *edid, size_t len)
++{
++	struct edid_resolution max = { 0, 0 };
++	int i, ext;
++
++	if (!edid || len < 128)
++		return max;
++
++	for (i = 54; i <= 108; i += 18)
++		epf_imx9_vga_parse_dtd(&edid[i], &max);
++
++	/*
++	 * Cap ext to the number of complete 128-byte extension blocks that
++	 * actually fit in the buffer. edid[126] is device-provided and must
++	 * not be trusted blindly (REV-007).
++	 */
++	ext = min_t(int, edid[126], (int)(len / 128) - 1);
++
++	for (i = 0; i < ext; i++) {
++		const u8 *blk;
++		int dtd_start;
++		int off;
++
++		if (128 * (i + 2) > len)
++			break;
++
++		blk = edid + 128 * (i + 1);
++
++		if (blk[0] != 0x02)
++			continue;
++
++		dtd_start = blk[2];
++
++		if (dtd_start < 4 || dtd_start >= 128)
++			continue;
++
++		for (off = dtd_start; off + 18 <= 128; off += 18)
++			epf_imx9_vga_parse_dtd(&blk[off], &max);
++	}
++
++	return max;
++}
++
++static void epf_imx9_vga_copy_edid_to_bar1(struct pci_epf_imx9_vga *epf_imx9_vga, struct kvm_config *cfg)
+ {
+ 	u8 *bar1;
+ 	int ret;
+ 	u8 edid[EDID_SIZE];
++	struct edid_resolution res;
+ 
+ 	if (!epf_imx9_vga->reg[BAR_1]) {
+ 		pr_err("pci-epf-imx9-vga: BAR1 not mapped\n");
+@@ -403,14 +660,66 @@ static void epf_imx9_vga_copy_edid_to_bar1(struct pci_epf_imx9_vga *epf_imx9_vga
+ 
+ 	bar1 = (u8 *)epf_imx9_vga->reg[BAR_1];
+ 
++	pr_info("========== Select EDID ==========\n");
++	pr_info("Configured Resolution : %s\n",
++		cfg->display == DISPLAY_4K ? "4K" : "1080p");
++	pr_info("Configured KVM Mode   : %s\n",
++		cfg->mode == KVM_MODE_PCIE_KVM ?
++		"PCIe KVM" : "PCIe Video + USB HID");
++
++	if (epf_imx9_vga_is_adv7535())
++		pr_info("Detected DT          : ADV7535\n");
++	else if (epf_imx9_vga_is_lt9611uxc())
++		pr_info("Detected DT          : LT9611UXC\n");
++	else
++		pr_info("Detected DT          : Unknown\n");
++
+ 	ret = epf_imx9_vga_read_edid_sysfs(edid);
+ 	if (ret) {
+-		pr_warn("pci-epf-imx9-vga: EDID read failed, using 4K fallback\n");
+-		memcpy(edid, default_edid, EDID_SIZE);
++		pr_warn("pci-epf-imx9-vga: Display EDID not found\n");
++		pr_info("pci-epf-imx9-vga: Using fallback %s EDID\n",
++			cfg->display == DISPLAY_4K ? "4K" : "1080p");
++
++		if (cfg->display == DISPLAY_4K)
++			memcpy(edid, default_edid_4k, EDID_SIZE);
++		else
++			memcpy(edid, default_edid_1080p, EDID_SIZE);
++
++		goto done;
++	}
++
++	res = epf_imx9_vga_get_max_resolution(edid, EDID_SIZE);
++
++	pr_info("Monitor Max Resolution : %ux%u\n",
++		res.width, res.height);
++
++	if (cfg->display == DISPLAY_1080P) {
++		pr_info("Requested Resolution : 1080p\n");
++
++		if (epf_imx9_vga_is_adv7535())
++			pr_info("ADV7535 supports 1080p mode\n");
++
++		if (res.width > 1920 || res.height > 1080) {
++			pr_info("Monitor supports higher resolution, advertising 1080p EDID\n");
++			memcpy(edid, default_edid_1080p, EDID_SIZE);
++		} else {
++			pr_info("Using monitor EDID\n");
++		}
+ 	} else {
+-		pr_info("pci-epf-imx9-vga: EDID read from sysfs\n");
++		pr_info("Requested Resolution : 4K\n");
++
++		if (!epf_imx9_vga_is_lt9611uxc()) {
++			pr_warn("LT9611UXC DT not detected, using 1080p EDID\n");
++			memcpy(edid, default_edid_1080p, EDID_SIZE);
++		} else if (res.width >= 3840 && res.height >= 2160) {
++			pr_info("Monitor supports 4K, using monitor EDID\n");
++		} else {
++			pr_warn("Monitor does not support 4K, using 1080p EDID\n");
++			memcpy(edid, default_edid_1080p, EDID_SIZE);
++		}
+ 	}
+ 
++done:
+ 	memcpy(bar1, edid, EDID_SIZE);
+ 	pr_info("pci-epf-imx9-vga: EDID copied to BAR1\n");
+ }
+@@ -419,37 +728,46 @@ static void epf_imx9_vga_copy_edid_to_bar1(struct pci_epf_imx9_vga *epf_imx9_vga
+ /* Option ROM                                                           */
+ /* ------------------------------------------------------------------ */
+ 
+-static int epf_imx9_vga_load_option_rom(struct pci_epf *epf)
++static int epf_imx9_vga_load_option_rom(struct pci_epf *epf, struct kvm_config *cfg)
+ {
+ 	struct pci_epf_imx9_vga *epf_imx9_vga = epf_get_drvdata(epf);
+-	const struct firmware *fw;
++	const struct firmware *fw = NULL;
+ 	void *rom_base;
+ 	size_t rom_size;
+ 	int ret;
+ 
+ 	dev_info(&epf->dev, "pci-epf-imx9-vga: Loading Option ROM\n");
+ 
+-#if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)
+-	ret = request_firmware(&fw, "OptionRom_pcie_kvm.rom", &epf->dev);
+-	if (ret) {
+-		dev_err(&epf->dev,
+-			"pci-epf-imx9-vga: Failed to load pcie Option ROM (%d)\n", ret);
+-		return ret;
+-	}
++	if (cfg->mode == KVM_MODE_PCIE_VIDEO_USB_HID) {
++		pr_info("Option ROM     : OptionRom.rom\n");
+ 
+-	dev_info(&epf->dev, "pci-epf-imx9-vga: pcie Option ROM size: %zu\n", fw->size);
++		ret = request_firmware(&fw, "OptionRom.rom", &epf->dev);
++		if (ret) {
++			dev_err(&epf->dev,
++				"pci-epf-imx9-vga: Failed to load Option ROM (%d)\n", ret);
++			goto out;
++		}
+ 
+-#else
+-	ret = request_firmware(&fw, "OptionRom.rom", &epf->dev);
+-	if (ret) {
++		dev_info(&epf->dev, "pci-epf-imx9-vga: Option ROM size: %zu\n", fw->size);
++
++	} else if (cfg->mode == KVM_MODE_PCIE_KVM) {
++		pr_info("Option ROM     : OptionRom_pcie_kvm.rom\n");
++
++		ret = request_firmware(&fw, "OptionRom_pcie_kvm.rom", &epf->dev);
++		if (ret) {
++			dev_err(&epf->dev,
++				"pci-epf-imx9-vga: Failed to load Option ROM (%d)\n", ret);
++			goto out;
++		}
++		dev_info(&epf->dev, "pci-epf-imx9-vga: Option ROM size: %zu\n", fw->size);
++	} else {
+ 		dev_err(&epf->dev,
+-			"pci-epf-imx9-vga: Failed to load Option ROM (%d)\n", ret);
+-		return ret;
++			"pci-epf-imx9-vga: unknown KVM mode %d, cannot select Option ROM\n",
++			cfg->mode);
++		ret = -EINVAL;
++		goto out;
+ 	}
+ 
+-	dev_info(&epf->dev, "pci-epf-imx9-vga: Option ROM size: %zu\n", fw->size);
+-
+-#endif
+ 	/* PCI spec: ROM BAR window >= 64KB */
+ 	rom_size = max_t(size_t, roundup_pow_of_two(fw->size), 65536);
+ 
+@@ -464,8 +782,8 @@ static int epf_imx9_vga_load_option_rom(struct pci_epf *epf)
+ 	if (!rom_base) {
+ 		dev_err(&epf->dev,
+ 			"pci-epf-imx9-vga: Failed to allocate ROM memory\n");
+-		release_firmware(fw);
+-		return -ENOMEM;
++		ret = -ENOMEM;	
++		goto out;
+ 	}
+ 
+ 	memcpy(rom_base, fw->data, fw->size);
+@@ -482,14 +800,18 @@ static int epf_imx9_vga_load_option_rom(struct pci_epf *epf)
+ 			"pci-epf-imx9-vga: Failed to configure ROM BAR (%d)\n", ret);
+ 		dma_free_coherent(epf->epc->dev.parent, rom_size, rom_base,
+ 				  epf_imx9_vga->rom_bar.phys_addr);
+-		release_firmware(fw);
+-		return ret;
++		goto out;
+ 	}
+ 
+ 	dev_info(&epf->dev,
+ 		 "pci-epf-imx9-vga: ROM BAR configured (%zu bytes)\n", rom_size);
+-	release_firmware(fw);
+-	return 0;
++
++	ret = 0;
++out:
++	if (fw)
++		release_firmware(fw);
++
++	return ret;
+ }
+ 
+ /* ------------------------------------------------------------------ */
+@@ -696,6 +1018,7 @@ static int epf_imx9_vga_epc_init(struct pci_epf *epf)
+ 	const struct pci_epc_features *epc_features = epf_imx9_vga->epc_features;
+ 	struct pci_epc *epc = epf->epc;
+ 	struct device *dev = &epf->dev;
++	char *envp_uevent[] = { "KVM_EVENT=kvm_ready", NULL};
+ 	int ret;
+ 
+ 	if (epf->vfunc_no <= 1) {
+@@ -734,21 +1057,46 @@ static int epf_imx9_vga_epc_init(struct pci_epf *epf)
+ 		}
+ 	}
+ 
+-	ret = epf_imx9_vga_load_option_rom(epf);
++	ret = epf_imx9_vga_read_kvm_config(&epf_imx9_vga->cfg);
++	if (ret)
++		dev_warn(dev, "pci-epf-imx9-vga: kvm config file not found (%d)\n", ret);
++
++	ret = epf_imx9_vga_load_option_rom(epf, &epf_imx9_vga->cfg);
+ 	if (ret)
+ 		dev_warn(dev, "pci-epf-imx9-vga: Option ROM not loaded (%d)\n", ret);
+ 
+ 	/* Populate EDID into BAR1 */
++	epf_imx9_vga_copy_edid_to_bar1(epf_imx9_vga, &epf_imx9_vga->cfg);
++
+ #if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)
+-	if (epf_imx9_vga->reg[BAR_3]) {
+-		WRITE_ONCE(hid_addr, epf_imx9_vga->reg[BAR_3]);
+-		pr_info("HID BAR3 address=%p\n", hid_addr);
+-	}
+-	else {
+-		dev_err(&epf->dev, "BAR3 not allocated\n");
+-		return -EINVAL;
++	if (epf_imx9_vga->cfg.mode == KVM_MODE_PCIE_KVM) {
++		if (epf_imx9_vga->reg[BAR_3]) {
++			WRITE_ONCE(hid_addr, epf_imx9_vga->reg[BAR_3]);
++			pr_info("HID BAR3 address=%p\n", hid_addr);
++			atomic_set(&epf_imx9_vga->hid_attached, 0);
++			ret = epf_hid_attach(hid_addr);
++			if (ret) {
++				dev_err(&epf->dev,
++					"pci-epf-imx9-vga: epf_hid_attach failed (%d)\n",
++					ret);
++				return ret;
++			}
++			atomic_set(&epf_imx9_vga->hid_attached, 1);
++		} else {
++			dev_err(&epf->dev, "BAR3 not allocated\n");
++			return -EINVAL;
++		}
+ 	}
+-#endif 
++#endif
++
++	/* Notify userspace that the PCIe endpoint is initialized.
++		* Userspace (udev / systemd) is responsible for restarting
++		* obmc-ikvm.service in response to this event.
++		*/
++
++	kobject_uevent_env(&epf->dev.kobj, KOBJ_CHANGE, envp_uevent);
++
++	dev_info(dev, "pci-epf-imx9-vga: sent kvm_ready uevent\n");
+ 
+ 	if (!epc_features->linkup_notifier)
+ 		queue_work(kpciimx9vga_workqueue, &epf_imx9_vga->cmd_handler.work);
+@@ -761,6 +1109,14 @@ static void epf_imx9_vga_epc_deinit(struct pci_epf *epf)
+ 	struct pci_epf_imx9_vga *epf_imx9_vga = epf_get_drvdata(epf);
+ 
+ 	cancel_delayed_work_sync(&epf_imx9_vga->cmd_handler);
++#if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)
++	if (epf_imx9_vga->cfg.mode == KVM_MODE_PCIE_KVM) {
++		if (atomic_cmpxchg(&epf_imx9_vga->hid_attached, 1, 0) == 1) {
++			epf_hid_detach();
++			WRITE_ONCE(hid_addr, NULL);
++		}
++	}
++#endif
+ 	epf_imx9_vga_clear_bar(epf);
+ }
+ 
+@@ -904,6 +1260,14 @@ static void epf_imx9_vga_unbind(struct pci_epf *epf)
+ 	struct pci_epc *epc = epf->epc;
+ 
+ 	cancel_delayed_work_sync(&epf_imx9_vga->cmd_handler);
++#if IS_ENABLED(CONFIG_PCIE_KVM_INPUT)
++	if (epf_imx9_vga->cfg.mode == KVM_MODE_PCIE_KVM) {
++		if (atomic_cmpxchg(&epf_imx9_vga->hid_attached, 1, 0) == 1) {
++			epf_hid_detach();
++			WRITE_ONCE(hid_addr, NULL);
++		}
++	}
++#endif
+ 	if (epc->init_complete) {
+ 		epf_imx9_vga_clear_bar(epf);
+ 	}
+@@ -993,6 +1357,73 @@ static const struct kernel_param_ops vga_offset_ops = {
+ module_param_cb(offset, &vga_offset_ops, NULL, 0644);
+ MODULE_PARM_DESC(offset, "VRAM framebuffer physical address");
+ 
++static int param_set_kvm_mode(const char *val, const struct kernel_param *kp)
++{
++	int ret;
++
++	mutex_lock(&param_lock);
++	ret = param_set_copystring(val, kp);
++	mutex_unlock(&param_lock);
++	return ret;
++}
++
++static int param_get_kvm_mode(char *buf, const struct kernel_param *kp)
++{
++	int ret;
++
++	mutex_lock(&param_lock);
++	ret = param_get_string(buf, kp);
++	mutex_unlock(&param_lock);
++	return ret;
++}
++
++static const struct kernel_param_ops kvm_mode_ops = {
++	.set = param_set_kvm_mode,
++	.get = param_get_kvm_mode,
++};
++
++/* kvm_mode */
++static struct kparam_string kvm_mode_kps = {
++	.maxlen = sizeof(param_kvm_mode),
++	.string = param_kvm_mode,
++};
++module_param_cb(kvm_mode, &kvm_mode_ops, &kvm_mode_kps, 0644);
++MODULE_PARM_DESC(kvm_mode,"KVM operating mode: pcie_kvm or pcie_video_usb_hid (default)");
++	
++static int param_set_display_resolution(const char *val, const struct kernel_param *kp)
++{
++	int ret;
++
++	mutex_lock(&param_lock);
++	ret = param_set_copystring(val, kp);
++	mutex_unlock(&param_lock);
++	return ret;
++}
++
++static int param_get_display_resolution(char *buf, const struct kernel_param *kp)
++{
++	int ret;
++
++	mutex_lock(&param_lock);
++	ret = param_get_string(buf, kp);
++	mutex_unlock(&param_lock);
++	return ret;
++}
++
++static const struct kernel_param_ops display_resolution_ops = {
++	.set = param_set_display_resolution,
++	.get = param_get_display_resolution,
++};
++
++/* display_resolution */
++static struct kparam_string display_resolution_kps = {
++	.maxlen = sizeof(param_display_resolution),
++	.string = param_display_resolution,
++};
++
++module_param_cb(display_resolution, &display_resolution_ops, &display_resolution_kps, 0644);
++MODULE_PARM_DESC(display_resolution,"Display resolution: 1080p (default) or 4k");
++
+ /* ------------------------------------------------------------------ */
+ /* PCI fixup: VGA class quirk                                           */
+ /* ------------------------------------------------------------------ */
+@@ -1052,4 +1483,6 @@ module_exit(pci_epf_imx9_vga_exit);
+ 
+ MODULE_DESCRIPTION("PCIe EP VGA Class Display Driver for i.MX95 iKVM");
+ MODULE_AUTHOR("Nikhil Gupta <nikhil.gupta_2@nxp.com>");
++MODULE_AUTHOR("Shreyash Damanwala <shreyash.damanwala@nxp.com>");
+ MODULE_LICENSE("GPL v2");
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-abs-mouse.c b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-abs-mouse.c
+index f1e54295cd50..53dcb7e47bd9 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-abs-mouse.c
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-abs-mouse.c
+@@ -1,11 +1,12 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
++ * Copyright 2026 NXP
++ *
+  * PCIe Endpoint Absolute Mouse Driver
+  *
+  * Captures absolute mouse input events from local devices and forwards
+  * HID reports over the PCIe endpoint using the EPF HID helper library.
+  *
+- * Copyright 2026 NXP
+  */
+ 
+ #include <linux/fs.h>
+@@ -17,7 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ 
+-#include <linux/pci-epf-hid.h>
++#include "pci-epf-hid.h"
+ 
+ #define DEVICE_NAME "pcie-abs-mouse"
+ 
+@@ -67,15 +68,26 @@ static void abs_mouse_event(struct input_handle *handle,
+ 	case EV_ABS:
+ 		switch (code) {
+ 		case ABS_X:
+-			mouse->report.x = cpu_to_le16(value);
++			if (value < 0)
++				value = 0;
++			else if (value > 0xffff)
++				value = 0xffff;
++
++			mouse->report.x = cpu_to_le16((u16)value);
+ 			break;
+ 
+ 		case ABS_Y:
+-			mouse->report.y = cpu_to_le16(value);
++			if (value < 0)
++				value = 0;
++			else if (value > 0xffff)
++				value = 0xffff;
++
++			mouse->report.y = cpu_to_le16((u16)value);
+ 			break;
+ 
+ 		case ABS_WHEEL:
+-			mouse->report.wheel = value;
++		    	value = clamp(value, -128, 127);
++			mouse->report.wheel = (s8)value;
+ 			break;
+ 
+ 		default:
+@@ -313,4 +325,5 @@ void abs_mouse_exit(void)
+ 	unregister_chrdev_region(abs_mouse_devno, 1);
+ 
+ 	pr_info("absolute mouse driver removed\n");
+-}
+\ No newline at end of file
++}
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-kvm-hid.c b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-kvm-hid.c
+index 5b9bab318929..da59beaf064d 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-kvm-hid.c
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-kvm-hid.c
+@@ -1,17 +1,32 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /*
+-* PCIe Endpoint HID helper library
+-*
+-* Provides helper APIs to initialize a PCIe HID ring buffer located in
+-* BAR3 and to send HID reports (keyboard, relative mouse, and absolute
+-* mouse) to the host through shared memory.
+-*
+-* During module initialization, the driver locates the target PCI device,
+-* maps BAR3, initializes a global HID context, and exposes helper
+-* functions for publishing HID reports into the shared ring buffer.
+-*
+-* Copyright 2026 NXP
+-*/
++ * Copyright 2026 NXP
++ *
++ * PCIe Endpoint HID helper library
++ *
++ * Provides helper APIs to initialize a PCIe HID ring buffer located in
++ * BAR3 and to send HID reports (keyboard, relative mouse, and absolute
++ * mouse) to the host through shared memory.
++ *
++ * BAR3 shared-memory layout:
++ *
++ * BAR3 + 0x0000
++ *     struct hid_ring_header
++ *
++ * BAR3 + 0x0010
++ *     struct hid_desc[HID_RING_SIZE]
++ *
++ * Producer and consumer indices are stored in BAR3 so that both the
++ * endpoint and PCIe host can observe ring ownership/progress.
++ *
++ * Initialization model:
++ *
++ * module_init() only registers input handlers and cdevs. The HID ring
++ * is NOT touched at module load time. The VGA EPF driver calls
++ * epf_hid_attach() from epc_init() once BAR3 is mapped, and
++ * epf_hid_detach() from epc_deinit()/unbind() before BAR3 is unmapped.
++ * This avoids the race where the module loads before the PCIe link is up.
++ */
+ 
+ #define pr_fmt(fmt) "pcie-hid-epf: " fmt
+ 
+@@ -23,21 +38,40 @@
+ 
+ #include <linux/pci.h>
+ #include <linux/pci_ids.h>
+-#include <linux/pci-epf-hid.h>
++#include <linux/types.h>
+ 
+-extern void* pci_epf_get_hid_address(void);
++#include "pci-epf-hid.h"
++
++
++static_assert(HID_SHARED_SIZE <= HID_BAR3_SIZE);
+ 
+ static struct epf_hid g_hid;
++static u32 g_hid_seq;
++
++static inline void epf_hid_publish_prod(struct epf_hid *hid, u32 prod)
++{
++	wmb();
++	iowrite32(prod, &hid->hdr->prod);
++}
++
++static inline u32 epf_hid_read_cons(struct epf_hid *hid)
++{
++	return ioread32(&hid->hdr->cons);
++}
+ 
+-static int epf_hid_send_report(u8 type, const void *report, size_t len)
++static int epf_hid_send_report(u32 type, const void *report, size_t len)
+ {
+ 	struct epf_hid *hid = &g_hid;
+-	struct hid_desc *desc;
++	struct hid_desc __iomem *desc;
+ 	unsigned long flags;
++	u32 prod;
++	u32 cons;
+ 	u32 idx;
++	u32 next_prod;
++	u32 seq;
+ 
+-	if (!hid->ring) {
+-		pr_err("%s: HID ring not initialized\n", __func__);
++	if (!hid->ring || !hid->hdr) {
++		pr_err_ratelimited("%s: HID ring not initialized\n", __func__);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -46,21 +80,47 @@ static int epf_hid_send_report(u8 type, const void *report, size_t len)
+ 		return -EINVAL;
+ 	}
+ 
++	if (len > sizeof(desc->data)) {
++		pr_err("%s: HID report too large: %zu > %zu\n",
++		       __func__, len, sizeof(desc->data));
++		return -EMSGSIZE;
++	}
++
+ 	spin_lock_irqsave(&hid->lock, flags);
+ 
+-	idx = hid->prod % HID_RING_SIZE;
++	prod = ioread32(&hid->hdr->prod);
++	cons = epf_hid_read_cons(hid);
++	next_prod = prod + 1;
++
++	if ((prod - cons) > HID_RING_SIZE) {
++		pr_warn("%s: corrupt cons=%u prod=%u, resetting\n",
++							__func__, cons, prod);
++		iowrite32(prod, &hid->hdr->cons);
++		cons = prod;
++	}
++
++	if ((next_prod - cons) >= HID_RING_SIZE) {
++		pr_warn("%s: HID ring full: prod=%u cons=%u\n",
++			__func__, prod, cons);
++		spin_unlock_irqrestore(&hid->lock, flags);
++		return -ENOSPC;
++	}
++
++	idx = prod % HID_RING_SIZE;
+ 	desc = &hid->ring[idx];
++	seq = ++g_hid_seq;
+ 
+-	desc->type = type;
+-	desc->len = len;
+-	desc->seq = ++hid->seq;
++	iowrite32(type,     &desc->type);
++	iowrite32((u32)len, &desc->len);
++	iowrite32(seq,      &desc->seq);
++	iowrite32(0,        &desc->flags);
+ 
+ 	memcpy_toio(desc->data, report, len);
+ 
+-	/* Ensure descriptor contents are visible before producer index */
+-	smp_wmb();
++	wmb();
+ 
+-	WRITE_ONCE(hid->prod, hid->prod + 1);
++	iowrite32(seq, &hid->hdr->seq);
++	epf_hid_publish_prod(hid, next_prod);
+ 
+ 	spin_unlock_irqrestore(&hid->lock, flags);
+ 
+@@ -69,95 +129,172 @@ static int epf_hid_send_report(u8 type, const void *report, size_t len)
+ 
+ int epf_hid_send_rel_mouse(struct hid_rel_mouse_report *rpt)
+ {
++	if (!rpt) {
++		pr_err("%s: report is NULL\n", __func__);
++		return -EINVAL;
++	}
++
+ 	return epf_hid_send_report(HID_TYPE_REL_MOUSE, rpt, sizeof(*rpt));
+ }
+ 
+ int epf_hid_send_abs_mouse(struct hid_abs_mouse_report *rpt)
+ {
++	if (!rpt) {
++		pr_err("%s: report is NULL\n", __func__);
++		return -EINVAL;
++	}
++
+ 	return epf_hid_send_report(HID_TYPE_ABS_MOUSE, rpt, sizeof(*rpt));
+ }
+ 
+ int epf_hid_send_keyboard(struct hid_keyboard_report *rpt)
+ {
++	if (!rpt) {
++		pr_err("%s: report is NULL\n", __func__);
++		return -EINVAL;
++	}
++
+ 	return epf_hid_send_report(HID_TYPE_KEYBOARD, rpt, sizeof(*rpt));
+ }
+ 
+-int epf_hid_init(void)
++/**
++ * epf_hid_attach() - attach the HID ring to a mapped BAR3 region
++ * @bar: virtual __iomem address of the BAR3 shared-memory region
++ *
++ * Called by the VGA EPF driver from epc_init() after BAR3 is mapped.
++ * Initializes the shared ring header and wires up the ring pointers.
++ * Input handlers and cdevs are already registered at module_init time
++ * and will start forwarding reports as soon as this returns.
++ *
++ * Return: 0 on success, negative error code on failure.
++ */
++int epf_hid_attach(void __iomem *bar)
+ {
+ 	struct epf_hid *hid = &g_hid;
+-	size_t ring_size;
++	size_t ring_size  = sizeof(struct hid_desc) * HID_RING_SIZE;
++	size_t total_size = sizeof(struct hid_ring_header) + ring_size;
+ 	int ret;
+ 	
+-	if (!pci_epf_get_hid_address())
++   /* Singleton guard */
++   if (WARN_ON(atomic_read(&hid->attached))) {
++       pr_err("%s: already attached — only one EP instance supported\n");
++       return -EBUSY;
++   }
++
++	if (!bar) {
++		pr_err("%s: BAR3 address is NULL\n", __func__);
+ 		return -EINVAL;
++	}
+ 
+-	memset(hid, 0, sizeof(*hid));
++	if (total_size > HID_BAR3_SIZE) {
++		pr_err("%s: HID ring does not fit BAR3: %zu > %u\n",
++		       __func__, total_size, HID_BAR3_SIZE);
++		return -EINVAL;
++	}
+ 
+ 	spin_lock_init(&hid->lock);
+ 
+-	hid->bar = pci_epf_get_hid_address();
+-	hid->ring = (struct hid_desc *)pci_epf_get_hid_address();
++	hid->bar  = bar;
++	hid->hdr  = (struct hid_ring_header __iomem *)bar;
++	hid->ring = (struct hid_desc __iomem *)
++		    ((u8 __iomem *)bar + sizeof(struct hid_ring_header));
+ 
+-	ring_size = sizeof(struct hid_desc) * HID_RING_SIZE;
++	/* Reset EP-local sequence counter */
++	g_hid_seq = 0;
+ 
+-	pr_info("Initialized HID ring: %u descriptors (%zu bytes)\n",
+-		HID_RING_SIZE, ring_size);
++	/* Clear the shared HID region and initialize header fields */
++	memset_io(hid->bar, 0, total_size);
++	iowrite32(0, &hid->hdr->prod);
++	iowrite32(0, &hid->hdr->cons);
++	iowrite32(0, &hid->hdr->seq);
++	iowrite32(0, &hid->hdr->reserved);
+ 
+-	ret = rel_mouse_init();
+-	if (ret) {
+-		pr_err("rel_mouse_init failed: %d\n", ret);
+-		goto err_rel_mouse;
+-	}
++	pr_info("%s: HID ring attached: %u descriptors, "
++		"header=%zu desc=%zu ring=%zu total=%zu BAR3=%u bytes\n",
++		__func__, HID_RING_SIZE,
++		sizeof(struct hid_ring_header), sizeof(struct hid_desc),
++		ring_size, total_size, HID_BAR3_SIZE);
+ 
+-	ret = abs_mouse_init();
+-	if (ret) {
+-		pr_err("abs_mouse_init failed: %d\n", ret);
+-		goto err_abs_mouse;
+-	}
++   /* Register input handlers now that BAR3 is ready */
++   ret = rel_mouse_init();
++   if (ret)
++   		goto err_rel_mouse;
+ 
+-	ret = keyboard_init();
+-	if (ret) {
+-		pr_err("keyboard_init failed: %d\n", ret);
+-		goto err_keyboard;
+-	}
++   ret = abs_mouse_init();
++   if (ret)
++   	   goto err_abs_mouse;
+ 
+-	ret = local_keyboard_init();
+-	if (ret) {
+-		pr_err("local_keyboard_init failed: %d\n", ret);
+-		goto err_local_keyboard;
+-	}
++   ret = keyboard_init();
++   if (ret)
++       goto err_keyboard;
+ 
+-	return 0;
++   ret = local_keyboard_init();
++   if (ret)
++       goto err_local_keyboard;
+ 
++    atomic_set(&hid->attached, 1);
+ 
+-err_local_keyboard:
+-	keyboard_exit();
++    pr_info("%s: HID ring attached\n", __func__);
++    return 0;
+ 
++err_local_keyboard:
++   keyboard_exit();
+ err_keyboard:
+-	abs_mouse_exit();
+-
++   abs_mouse_exit();
+ err_abs_mouse:
+-	rel_mouse_exit();
+-
++   rel_mouse_exit();
+ err_rel_mouse:
+-	return ret;
++   hid->ring = NULL;
++   hid->hdr  = NULL;
++   hid->bar  = NULL;
++   return ret;
+ }
++EXPORT_SYMBOL_GPL(epf_hid_attach);
+ 
+-void epf_hid_exit(void)
++void epf_hid_detach(void)
+ {
+-	local_keyboard_exit();
++	struct epf_hid *hid = &g_hid;
++	unsigned long flags;
+ 
+-	keyboard_exit();
++	spin_lock_irqsave(&hid->lock, flags);
++	if (!hid->ring && !hid->hdr && !hid->bar) {
++		spin_unlock_irqrestore(&hid->lock, flags);
++		pr_debug("%s: already detached, skipping\n", __func__);
++		return;
++	}
+ 
+-	abs_mouse_exit();
++	hid->ring = NULL;
++	hid->hdr  = NULL;
++	hid->bar  = NULL;
++	atomic_set(&hid->attached, 0);
++	spin_unlock_irqrestore(&hid->lock, flags);
+ 
++	local_keyboard_exit();
++	keyboard_exit();
++	abs_mouse_exit();
+ 	rel_mouse_exit();
+ 
+-	pr_info("HID helper exited\n");
++	pr_info("%s: HID ring detached\n", __func__);
+ }
++EXPORT_SYMBOL_GPL(epf_hid_detach);
++
++static int __init epf_hid_init(void)
++{
++    memset(&g_hid, 0, sizeof(g_hid));
++    spin_lock_init(&g_hid.lock);
++	pr_info("%s: PCIe HID helper ready\n", __func__);
++	return 0;
++}
++
++static void __exit epf_hid_exit(void)
++{
++	epf_hid_detach();
++	pr_info("%s: PCIe HID helper exited\n", __func__);
++}
++
+ module_init(epf_hid_init);
+ module_exit(epf_hid_exit);
+-
+ MODULE_DESCRIPTION("PCIe HID BAR3 helper");
+ MODULE_AUTHOR("Shreyash Damanwala <shreyash.damanwala@nxp.com>");
+-MODULE_LICENSE("GPL v2");
+\ No newline at end of file
++MODULE_LICENSE("GPL v2");
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-local-keyboard.c b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-local-keyboard.c
+index dec9e00f4d5e..0224d7504218 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-local-keyboard.c
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-local-keyboard.c
+@@ -1,16 +1,17 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
++ * Copyright 2026 NXP
++ *
+  * PCIe Endpoint Local Keyboard Driver
+  *
+  * Captures keyboard HID reports from local HID devices and forwards them
+  * over the PCIe endpoint using the EPF HID helper.
+  *
+- * Copyright 2026 NXP
+  */
+ 
+ #include <linux/hid.h>
+ #include <linux/slab.h>
+-#include <linux/pci-epf-hid.h>
++#include "pci-epf-hid.h"
+ 
+ struct local_keyboard {
+ 	bool keyboard;
+@@ -90,19 +91,36 @@ static int local_keyboard_probe(struct hid_device *hdev,
+ 	kbd->keyboard = local_keyboard_match(hdev);
+ 
+ 	if (!kbd->keyboard) {
+-		pr_info("ignoring non-keyboard HID device\n");
++		pr_debug("ignoring non-keyboard HID device %s\n",
++			dev_name(&hdev->dev));
++
++		/*
++		 * Do not call hid_hw_stop() or return -ENODEV here.
++		 *
++		 * Composite USB HID devices (e.g. Logitech wireless receivers)
++		 * share a single HID device across keyboard and mouse interfaces.
++		 * Calling hid_hw_stop() would tear down the entire device,
++		 * including the mouse interface managed by another driver.
++		 * Returning -ENODEV would have the same effect on some kernels.
++		 *
++		 * Instead, keep the device attached but mark it as non-keyboard.
++		 * local_keyboard_raw_event() will silently ignore all events
++		 * from this interface.
++		 */
++		kbd->keyboard = false;
++
+ 		return 0;
+ 	}
+ 
+-	pr_info("keyboard detected\n");
++	pr_info("keyboard detected: %s\n", dev_name(&hdev->dev));
+ 
+ 	return 0;
+ }
+ 
+ static const struct hid_device_id local_keyboard_ids[] = {
+ 	{
+-		HID_DEVICE(HID_BUS_ANY,
+-			   HID_GROUP_ANY,
++		HID_DEVICE(BUS_USB,
++			   HID_GROUP_GENERIC,
+ 			   HID_ANY_ID,
+ 			   HID_ANY_ID)
+ 	},
+@@ -131,4 +149,5 @@ void local_keyboard_exit(void)
+ 	hid_unregister_driver(&local_keyboard_driver);
+ 
+ 	pr_info("local keyboard HID driver unloaded\n");
+-}
+\ No newline at end of file
++}
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-rel-mouse.c b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-rel-mouse.c
+index 8f4ae0b088bc..0c4638c5fb6b 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/pcie-rel-mouse.c
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pcie-rel-mouse.c
+@@ -1,11 +1,12 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /*
++ * Copyright 2026 NXP
++ *
+  * PCIe Endpoint Relative Mouse Driver for i.MX95 iKVM
+  *
+  * Captures relative mouse input events from local and remote devices and
+  * forwards them over the PCIe endpoint through the PCIe HID helper.
+  *
+- * Copyright 2026 NXP
+  */
+ 
+ #define pr_fmt(fmt) "pcie-rel-mouse: " fmt
+@@ -19,7 +20,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ 
+-#include <linux/pci-epf-hid.h>
++#include "pci-epf-hid.h"
+ 
+ #define DEVICE_NAME "pcie-rel-mouse"
+ 
+@@ -36,17 +37,17 @@ struct pcie_rel_mouse {
+ 
+ static void pcie_rel_mouse_send_work(struct work_struct *work)
+ {
+-	struct pcie_rel_mouse *vm;
++	struct pcie_rel_mouse *mouse;
+ 	struct hid_rel_mouse_report rpt;
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	vm = container_of(work, struct pcie_rel_mouse, work);
++	mouse = container_of(work, struct pcie_rel_mouse, work);
+ 
+-	spin_lock_irqsave(&vm->lock, flags);
+-	rpt = vm->report;
+-	memset(&vm->report, 0, sizeof(vm->report));
+-	spin_unlock_irqrestore(&vm->lock, flags);
++	spin_lock_irqsave(&mouse->lock, flags);
++	rpt = mouse->report;
++	memset(&mouse->report, 0, sizeof(mouse->report));
++	spin_unlock_irqrestore(&mouse->lock, flags);
+ 
+ 	ret = epf_hid_send_rel_mouse(&rpt);
+ 	if (ret)
+@@ -58,27 +59,27 @@ static void pcie_rel_mouse_event(struct input_handle *handle,
+ 				 unsigned int code,
+ 				 int value)
+ {
+-	struct pcie_rel_mouse *vm;
++	struct pcie_rel_mouse *mouse;
+ 	unsigned long flags;
+ 
+-	vm = container_of(handle, struct pcie_rel_mouse, handle);
++	mouse = container_of(handle, struct pcie_rel_mouse, handle);
+ 
+-	spin_lock_irqsave(&vm->lock, flags);
++	spin_lock_irqsave(&mouse->lock, flags);
+ 
+ 	switch (type) {
+ 	case EV_REL:
+ 		switch (code) {
+ 		case REL_X:
+-			vm->report.x = value;
++			mouse->report.x = value;
+ 			break;
+ 		case REL_Y:
+-			vm->report.y = value;
++			mouse->report.y = value;
+ 			break;
+ 		case REL_WHEEL:
+-			vm->report.wheel = value;
++			mouse->report.wheel = value;
+ 			break;
+ 		default:
+-			spin_unlock_irqrestore(&vm->lock, flags);
++			spin_unlock_irqrestore(&mouse->lock, flags);
+ 			return;
+ 		}
+ 		break;
+@@ -87,96 +88,96 @@ static void pcie_rel_mouse_event(struct input_handle *handle,
+ 		switch (code) {
+ 		case BTN_LEFT:
+ 			if (value)
+-				vm->report.buttons |= BIT(0);
++				mouse->report.buttons |= BIT(0);
+ 			else
+-				vm->report.buttons &= ~BIT(0);
++				mouse->report.buttons &= ~BIT(0);
+ 			break;
+ 
+ 		case BTN_RIGHT:
+ 			if (value)
+-				vm->report.buttons |= BIT(1);
++				mouse->report.buttons |= BIT(1);
+ 			else
+-				vm->report.buttons &= ~BIT(1);
++				mouse->report.buttons &= ~BIT(1);
+ 			break;
+ 
+ 		case BTN_MIDDLE:
+ 			if (value)
+-				vm->report.buttons |= BIT(2);
++				mouse->report.buttons |= BIT(2);
+ 			else
+-				vm->report.buttons &= ~BIT(2);
++				mouse->report.buttons &= ~BIT(2);
+ 			break;
+ 
+ 		default:
+-			spin_unlock_irqrestore(&vm->lock, flags);
++			spin_unlock_irqrestore(&mouse->lock, flags);
+ 			return;
+ 		}
+ 		break;
+ 
+ 	case EV_SYN:
+-		spin_unlock_irqrestore(&vm->lock, flags);
++		spin_unlock_irqrestore(&mouse->lock, flags);
+ 
+-		if (code == SYN_REPORT && !work_pending(&vm->work))
+-			schedule_work(&vm->work);
++		if (code == SYN_REPORT && !work_pending(&mouse->work))
++			schedule_work(&mouse->work);
+ 
+ 		return;
+ 
+ 	default:
+-		spin_unlock_irqrestore(&vm->lock, flags);
++		spin_unlock_irqrestore(&mouse->lock, flags);
+ 		return;
+ 	}
+ 
+-	spin_unlock_irqrestore(&vm->lock, flags);
++	spin_unlock_irqrestore(&mouse->lock, flags);
+ }
+ 
+ static int pcie_rel_mouse_connect(struct input_handler *handler,
+ 				  struct input_dev *dev,
+ 				  const struct input_device_id *id)
+ {
+-	struct pcie_rel_mouse *vm;
++	struct pcie_rel_mouse *mouse;
+ 	int ret;
+ 
+ 	pr_info("connect %s\n", dev_name(&dev->dev));
+ 
+-	vm = kzalloc(sizeof(*vm), GFP_KERNEL);
+-	if (!vm)
++	mouse = kzalloc(sizeof(*mouse), GFP_KERNEL);
++	if (!mouse)
+ 		return -ENOMEM;
+ 
+-	spin_lock_init(&vm->lock);
+-	INIT_WORK(&vm->work, pcie_rel_mouse_send_work);
++	spin_lock_init(&mouse->lock);
++	INIT_WORK(&mouse->work, pcie_rel_mouse_send_work);
+ 
+-	vm->handle.dev = dev;
+-	vm->handle.handler = handler;
+-	vm->handle.name = "pcie_rel_mouse";
++	mouse->handle.dev = dev;
++	mouse->handle.handler = handler;
++	mouse->handle.name = "pcie_rel_mouse";
+ 
+-	ret = input_register_handle(&vm->handle);
++	ret = input_register_handle(&mouse->handle);
+ 	if (ret)
+ 		goto err_free;
+ 
+-	ret = input_open_device(&vm->handle);
++	ret = input_open_device(&mouse->handle);
+ 	if (ret)
+ 		goto err_unregister;
+ 
+ 	return 0;
+ 
+ err_unregister:
+-	input_unregister_handle(&vm->handle);
++	input_unregister_handle(&mouse->handle);
+ err_free:
+-	kfree(vm);
++	kfree(mouse);
+ 	return ret;
+ }
+ 
+ static void pcie_rel_mouse_disconnect(struct input_handle *handle)
+ {
+-	struct pcie_rel_mouse *vm;
++	struct pcie_rel_mouse *mouse;
+ 
+-	vm = container_of(handle, struct pcie_rel_mouse, handle);
++	mouse = container_of(handle, struct pcie_rel_mouse, handle);
+ 
+-	cancel_work_sync(&vm->work);
++	cancel_work_sync(&mouse->work);
+ 
+ 	input_close_device(handle);
+ 	input_unregister_handle(handle);
+ 
+-	kfree(vm);
++	kfree(mouse);
+ 
+ 	pr_info("disconnected\n");
+ }
+@@ -300,4 +301,5 @@ void rel_mouse_exit(void)
+ 	unregister_chrdev_region(pcie_rel_mouse_devno, 1);
+ 
+ 	pr_info("relative mouse removed\n");
+-}
+\ No newline at end of file
++}
++
+diff --git a/drivers/pci/endpoint/functions/imx9_ikvm/pcie_keyboard.c b/drivers/pci/endpoint/functions/imx9_ikvm/pcie_keyboard.c
+index 4d51936a7808..8efcc4e1b59e 100644
+--- a/drivers/pci/endpoint/functions/imx9_ikvm/pcie_keyboard.c
++++ b/drivers/pci/endpoint/functions/imx9_ikvm/pcie_keyboard.c
+@@ -1,11 +1,12 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
++ * Copyright 2026 NXP
++ *
+  * PCIe Endpoint Virtual Keyboard Driver
+  *
+  * Provides a character device interface for sending keyboard HID reports
+  * over the PCIe endpoint using the EPF HID helper library.
+  *
+- * Copyright 2026 NXP
+  */
+ 
+ #include <linux/fs.h>
+@@ -13,7 +14,7 @@
+ #include <linux/device.h>
+ #include <linux/uaccess.h>
+ 
+-#include <linux/pci-epf-hid.h>
++#include "pci-epf-hid.h"
+ 
+ #define DEVICE_NAME	"pcie-keyboard"
+ 
+@@ -117,4 +118,5 @@ void keyboard_exit(void)
+ 	unregister_chrdev_region(keyboard_devno, 1);
+ 
+ 	pr_info("virtual keyboard driver removed\n");
+-}
+\ No newline at end of file
++}
++
+diff --git a/include/linux/pci-epf-hid.h b/include/linux/pci-epf-hid.h
+deleted file mode 100644
+index 37c0408849bf..000000000000
+--- a/include/linux/pci-epf-hid.h
++++ /dev/null
+@@ -1,162 +0,0 @@
+-// SPDX-License-Identifier: GPL-2.0
+-// Copyright 2026 NXP
+-
+-/*
+- * PCI Endpoint HID Function with pci-epf-imx9-vga function
+- *
+- * This header defines the common data structures and APIs used by the
+- * PCI Endpoint HID function for handling keyboard and mouse reports.
+- */
+-
+-#ifndef __PCI_EPF_HID_H__
+-#define __PCI_EPF_HID_H__
+-
+-#include <linux/types.h>
+-#include <linux/spinlock.h>
+-
+-/*
+- * HID device types supported by the PCI Endpoint HID function.
+- */
+-#define HID_TYPE_KEYBOARD  1
+-#define HID_TYPE_REL_MOUSE 2
+-#define HID_TYPE_ABS_MOUSE 3
+-
+-/*
+- * Number of HID descriptors that can be stored in the ring buffer.
+- */
+-#define HID_RING_SIZE 256
+-
+-/*
+- * HID event descriptor stored in the shared ring buffer.
+- *
+- * @type:  HID device/report type.
+- * @len:   Length of valid data in @data.
+- * @seq:   Sequence number of the report.
+- * @flags: Report/event flags.
+- * @data:  HID report payload.
+- */
+-struct hid_desc {
+-	u32 type;
+-	u32 len;
+-	u32 seq;
+-	u32 flags;
+-	u8 data[64];
+-} __packed;
+-
+-/*
+- * Private state for the PCI Endpoint HID function.
+- *
+- * @lock: Protects access to the HID ring and producer/consumer state.
+- * @bar:  Pointer to the PCI BAR/shared memory region used for HID data.
+- * @prod: Producer index of the HID ring buffer.
+- * @cons: Consumer index of the HID ring buffer.
+- * @seq:  Sequence number assigned to outgoing reports.
+- * @ring: Pointer to the HID descriptor ring buffer.
+- */
+-struct epf_hid {
+-	spinlock_t lock;
+-
+-	void *bar;
+-
+-	u32 prod;
+-	u32 cons;
+-	u32 seq;
+-
+-	struct hid_desc *ring;
+-};
+-
+-/*
+- * Relative mouse HID report.
+- *
+- * @buttons: Current mouse button state.
+- * @x:       Relative movement along the X axis.
+- * @y:       Relative movement along the Y axis.
+- * @wheel:   Relative wheel movement.
+- */
+-struct hid_rel_mouse_report {
+-	u8 buttons;
+-	s8 x;
+-	s8 y;
+-	s8 wheel;
+-} __packed;
+-
+-/*
+- * Absolute mouse HID report.
+- *
+- * @buttons: Current mouse button state.
+- * @x:       Absolute X coordinate.
+- * @y:       Absolute Y coordinate.
+- * @wheel:   Relative wheel movement.
+- */
+-struct hid_abs_mouse_report {
+-	u8 buttons;
+-	u16 x;
+-	u16 y;
+-	s8 wheel;
+-} __packed;
+-
+-/*
+- * USB/HID boot-protocol keyboard report.
+- *
+- * @modifier: Modifier key bitmap (Ctrl, Shift, Alt, etc.).
+- * @reserved: Reserved byte required by the standard keyboard report.
+- * @keycode:  Up to six simultaneously pressed key codes.
+- */
+-struct hid_keyboard_report {
+-	u8 modifier;
+-	u8 reserved;
+-	u8 keycode[6];
+-} __packed;
+-
+-/*
+- * Relative mouse interface initialization and cleanup.
+- */
+-int rel_mouse_init(void);
+-void rel_mouse_exit(void);
+-
+-/*
+- * Send a relative mouse report through the PCI Endpoint HID function.
+- *
+- * @rpt: Pointer to the relative mouse report.
+- *
+- * Return: 0 on success, or a negative error code on failure.
+- */
+-int epf_hid_send_rel_mouse(struct hid_rel_mouse_report *rpt);
+-
+-/*
+- * Absolute mouse interface initialization and cleanup.
+- */
+-int abs_mouse_init(void);
+-void abs_mouse_exit(void);
+-
+-/*
+- * Send an absolute mouse report through the PCI Endpoint HID function.
+- *
+- * @rpt: Pointer to the absolute mouse report.
+- *
+- * Return: 0 on success, or a negative error code on failure.
+- */
+-int epf_hid_send_abs_mouse(struct hid_abs_mouse_report *rpt);
+-
+-/*
+- * Remote/PCI Endpoint keyboard interface initialization and cleanup.
+- */
+-int keyboard_init(void);
+-void keyboard_exit(void);
+-
+-/*
+- * Local keyboard interface initialization and cleanup.
+- */
+-int local_keyboard_init(void);
+-void local_keyboard_exit(void);
+-
+-/*
+- * Send a keyboard HID report through the PCI Endpoint HID function.
+- *
+- * @rpt: Pointer to the keyboard report.
+- *
+- * Return: 0 on success, or a negative error code on failure.
+- */
+-int epf_hid_send_keyboard(struct hid_keyboard_report *rpt);
+-
+-#endif /* __PCI_EPF_HID_H__ */
+\ No newline at end of file
+-- 
+2.34.1
+

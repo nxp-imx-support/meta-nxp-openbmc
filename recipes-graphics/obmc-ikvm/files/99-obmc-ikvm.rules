@@ -1,0 +1,12 @@
+# PCIe iKVM udev rules
+#
+# Rule 1: Create /dev/obmc-ikvm symlink when the PCIe Host Console
+#         video device is registered.
+
+SUBSYSTEM=="video4linux", ATTR{name}=="PCIe Host Console", SYMLINK+="obmc-ikvm"
+
+# Rule 2: Restart obmc-ikvm.service when the PCIe endpoint
+#         signals kvm_ready (fires on every epc_init, all KVM modes).
+
+SUBSYSTEM=="pci_epf", ACTION=="change", ENV{KVM_EVENT}=="kvm_ready", \
+    RUN+="/bin/systemctl restart obmc-ikvm.service"
