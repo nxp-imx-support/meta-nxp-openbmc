@@ -134,11 +134,187 @@ bitbake -c cleansstate <package>
 bitbake <package>
 ```
 
-> **Note:** The WIC image will be available at `tmp/deploy/images/<machine>/`
+> **Note:** The WIC image will be available at
+> `build/<machine>/tmp/deploy/images/<machine>/`
 
 ---
 
-## 5. Supported OpenBMC Features
+## 5. Flashing the Image to an SD Card / eMMC
+
+The build produces a bzip2-compressed WIC image
+(`obmc-phosphor-image-<machine>.wic.bz2`).
+
+1. Insert the micro-SD card into your Linux host and identify the device node:
+   ```bash
+   lsblk
+   ```
+   > **Warning:** Double-check the device node (e.g. `/dev/sdX` or
+   > `/dev/mmcblkX`). Writing to the wrong device can destroy host data.
+
+2. Flash directly from the compressed image (no separate decompress step
+   needed):
+   ```bash
+   sudo apt install bzip2
+   cd build/<machine>/tmp/deploy/images/<machine>
+   bunzip2 -c obmc-phosphor-image-<machine>-<timestamp>.wic.bz2 \
+       | sudo dd of=/dev/<sd-card-device> bs=4M conv=fdatasync status=progress
+   ```
+
+   Alternatively, decompress first and then flash the `.wic`:
+   ```bash
+   bunzip2 obmc-phosphor-image-<machine>-<timestamp>.wic.bz2
+   sudo dd if=obmc-phosphor-image-<machine>-<timestamp>.wic \
+       of=/dev/<sd-card-device> bs=4M conv=fdatasync status=progress
+   ```
+
+---
+
+## 6. First Boot and Bring-up
+
+1. Set the board boot switches to boot from the SD card and power on. To reach
+   the U-Boot / Linux serial console, connect a USB-C cable to the board's debug
+   port and open a serial terminal on the host (115200 8N1):
+   ```bash
+   # using cu:
+   sudo apt install cu
+   cu -l /dev/ttyACM0 -s 115200
+
+   # or with screen:
+   screen /dev/ttyACM0 115200
+
+   # or with minicom:
+   minicom -D /dev/ttyACM0 -b 115200
+
+   # If nothing appears, try /dev/ttyACM1, /dev/ttyACM2, ...
+   ```
+
+2. **(i.MX93 only)** If the default device tree is not the BMC variant, stop at
+   U-Boot ("Hit any key to stop autoboot") and select the BMC device tree:
+   ```bash
+   setenv fdtfile imx93-11x11-frdm-bmc.dtb
+   saveenv
+   boot
+   ```
+
+3. Log in at the console with the default credentials (see
+   [Section 8, Default Credentials & Hardening](#8-default-credentials--hardening)).
+
+4. **Service state on boot.** Bringing the BMC/host state machine to the ready
+   state and setting up the host console are handled automatically on every
+   boot by the `bmc-init` recipe, which installs and auto-enables
+   `bmc-state-change.service` and `bmc-console.service`. No manual step is
+   required for these (they replace the former `state_change.sh` / `console.sh`
+   helpers).
+
+5. **One-time: disable non-applicable services.** On a freshly flashed image you
+   may want to disable services that are not applicable to the board. The
+   `scripts/disable_services.sh` helper in this layer is **not** installed onto
+   the board, so copy it over (or run its commands directly on the board):
+   ```bash
+   # from the host, once the board has an IP (see Section 7):
+   scp scripts/disable_services.sh root@<board-ip>:/tmp/
+
+   # then on the board console / SSH:
+   systemctl --failed            # inspect any failed services
+   chmod +x /tmp/disable_services.sh && /tmp/disable_services.sh
+   ```
+   > **Note:** `disable_services.sh` disables `systemd-networkd-wait-online`,
+   > `uart-render-controller`, and `trace-enable`, then reboots the board. It
+   > only needs to be run once per freshly flashed image.
+
+---
+
+## 7. Accessing the OpenBMC Web UI
+
+1. Connect the board's management Ethernet port (e.g. ENET2 / P4 on the i.MX93
+   FRDM) to the same network as your host. An address is obtained via DHCP; for
+   boards/interfaces that need to be brought up manually:
+   ```bash
+   udhcpc -i <interface>          # e.g. eth0
+   ```
+
+2. Read the assigned IPv4 address from the board console:
+   ```bash
+   ip addr show eth0
+   # or (BusyBox also ships ifconfig): ifconfig eth0
+   ```
+
+3. From a browser on a host in the same network, open:
+   ```
+   https://<board-ip>
+   ```
+   Accept the self-signed-certificate warning if prompted
+   ("Advanced" -> "Accept the Risk and Continue").
+
+4. Log in with the default credentials (see
+   [Section 8, Default Credentials & Hardening](#8-default-credentials--hardening)).
+
+From the Web UI you can view sensors (**Hardware Status -> Sensors**), the host
+serial console (**Overview -> SOL Console**), and perform power operations
+(**Operations -> Server Power Operations**).
+
+---
+
+## 8. Default Credentials & Hardening
+
+The image ships with a single default account for initial bring-up:
+
+| Username | Password |
+|---|---|
+| `root` | `0penBmc`  _(the first character is a **zero**, not the letter O)_ |
+
+> **Important:** These defaults are for initial access only. Change the
+> credentials and harden remote access before connecting a board to any shared
+> or production network.
+
+### Change the default password
+
+Over SSH or the serial console:
+```bash
+passwd root
+```
+Or via the Web UI: **Security and Access -> User Management**, then edit the
+`root` user (or create a new privileged user and disable/rename `root`).
+
+Over Redfish:
+```bash
+curl -k -u root -X PATCH \
+  https://<board-ip>/redfish/v1/AccountService/Accounts/root \
+  -H 'Content-Type: application/json' \
+  -d '{"Password":"<new-strong-password>"}'
+```
+> **Tip:** Passing `-u root` (without the password) makes `curl` prompt for it
+> interactively. Avoid putting the password inline (`-u root:<pw>`) — it would
+> be visible in your shell history and in process listings. Use a prompt or a
+> `--netrc` file instead.
+
+### SSH hardening
+
+- **Use key-based authentication** and disable password logins. This layer
+  builds on the default OpenBMC/phosphor image, which uses **Dropbear** as its
+  SSH server (not OpenSSH). Add your public key to `~/.ssh/authorized_keys`;
+  Dropbear reads it automatically. To disable password authentication, set
+  `DROPBEAR_EXTRA_ARGS="-s"` for the `dropbear` service, then restart it:
+  ```bash
+  systemctl restart dropbear
+  ```
+  > **Note:** If the image was rebuilt to use OpenSSH instead, configure
+  > `/etc/ssh/sshd_config` (`PasswordAuthentication no`,
+  > `PermitRootLogin prohibit-password`) and restart `sshd` instead.
+- **Restrict management access** to a trusted management network / VLAN; do not
+  expose the BMC directly to untrusted networks.
+- **Replace the default self-signed TLS certificate** with a CA-signed
+  certificate for the Web UI / Redfish (**Security and Access -> Certificates**,
+  or via the Redfish `CertificateService`).
+- **Rotate credentials** and disable any unused accounts and services after
+  bring-up.
+
+> Report suspected security vulnerabilities to the NXP Product Security Incident
+> Response Team (PSIRT) at `PSIRT@nxp.com`.
+
+---
+
+## 9. Supported OpenBMC Features
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -161,7 +337,7 @@ bitbake <package>
 
 ---
 
-## 6. Directory Structure
+## 10. Directory Structure
 
 ```
 meta-common/           Shared BSP code (meta-imx-bsp)
@@ -212,6 +388,30 @@ BSP overrides used for the iKVM PCIe EP group).
 > group, applied only on the `mx943-nxp-bsp` and `mx95-nxp-bsp` BSP overrides.
 > Kernel config deltas are supplied via `openbmc_common.cfg` (all platforms)
 > and `openbmc_imx943_imx95.cfg` (i.MX943/i.MX95 only) rather than patches.
+
+---
+
+## 11. Troubleshooting & FAQ
+
+| Symptom | Likely cause / fix |
+|---|---|
+| A package fails to build | Rebuild just that package: `bitbake -c cleansstate <package> && bitbake <package>`. |
+| Nothing on the serial console | Try another device node (`/dev/ttyACM1`, `ttyACM2`, …) and confirm 115200 8N1; re-seat the USB-C cable. |
+| Board does not boot from SD | Verify boot-switch settings for SD/eMMC boot and re-flash the WIC (check you wrote to the correct `/dev/` node). |
+| i.MX93 boots wrong device tree | Stop at U-Boot and set `fdtfile imx93-11x11-frdm-bmc.dtb`, then `saveenv; boot`. |
+| Failed services after first boot | Run the one-time `disable_services.sh` (see Section 6); BMC/host state and console are set automatically by `bmc-state-change.service` / `bmc-console.service`. |
+| No IP address on the board | Ensure the management Ethernet port is used and on the same subnet; run `udhcpc -i eth0`, then `ip addr show eth0` (or `ifconfig eth0`). |
+| Web UI unreachable / cert warning | Use `https://<board-ip>` (not `http`) and accept the self-signed certificate. |
+| Login rejected | Default login is `root` / `0penBmc` — the first character is a **zero**. |
+| iKVM not working on i.MX95 EVK / i.MX943 EVK | PCI-related rework is required; contact NXP support for the changes. |
+
+### Where to Get Help
+
+- **Related documentation:** *OpenBMC i.MX9x User Guide* (OpenBMC-IMX9x-UM) for
+  end-to-end demo walkthroughs, hardware wiring, and per-board feature usage.
+- **Security vulnerabilities:** contact the NXP Product Security Incident
+  Response Team (PSIRT) at `PSIRT@nxp.com`.
+- **General support:** contact your local NXP FAE or sales representative.
 
 ---
 
