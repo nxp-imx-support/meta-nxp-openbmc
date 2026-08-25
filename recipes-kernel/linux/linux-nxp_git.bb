@@ -68,10 +68,11 @@ IKVM_PCIE_EP_PATCHES = " \
     file://0014-meta-nxp-media-stream2v4l2-add-i.MX94-support-and-fi.patch \
     file://0015-PCI-endpoint-add-alloc_bar-free_bar-ops-to-pci_epf_o.patch \
     file://0016-PCI-endpoint-core-restore-generic-BAR-alloc-remove-V.patch \
-    file://0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i.patch  \
+    file://0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i.patch \
     file://0018-PCI-endpoint-Kconfig-Makefile-add-PCI_EPF_IMX9_VGA-e.patch \
     file://0019-PCI-endpoint-Add-iKVM-HID-input-support-to-i.MX9-VGA.patch \
     file://0020-PCI-endpoint-Add-configurable-iKVM-display-and-KVM-m.patch \
+    file://0021-arm64-dts-imx95-Add-no-display-DPU-overlay-for-PCIe-.patch \
 "
 
 # Apply common cfg + per-platform patches via MACHINE override

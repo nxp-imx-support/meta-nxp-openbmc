@@ -12,6 +12,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <dirent.h>
+#include <limits.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
@@ -59,6 +62,95 @@ static int last_w;
 static int last_h;
 
 static volatile sig_atomic_t running = 1;
+static bool no_display_mode = false;
+
+static bool dt_search_dir(const char *dirpath, const char *compat)
+{
+    DIR           *dir;
+    struct dirent *entry;
+    char           fullpath[PATH_MAX];
+    struct stat    st;
+    int            fd;
+    char          *buf;
+    ssize_t        n;
+    size_t         i;
+    bool           found;
+
+    dir = opendir(dirpath);
+    if (!dir)
+        return false;
+
+    while ((entry = readdir(dir)) != NULL) {
+
+        if (entry->d_name[0] == '.' &&
+            (entry->d_name[1] == '\0' ||
+            (entry->d_name[1] == '.' && entry->d_name[2] == '\0')))
+            continue;
+
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpath, entry->d_name);
+
+        if (stat(fullpath, &st) < 0)
+            continue;
+
+        if (S_ISDIR(st.st_mode)) {
+            if (dt_search_dir(fullpath, compat)) {
+                closedir(dir);
+                return true;
+            }
+        } else if (S_ISREG(st.st_mode) && st.st_size > 0) {
+
+            buf = malloc((size_t)st.st_size + 1);
+            if (!buf)
+                continue;
+
+            fd = open(fullpath, O_RDONLY | O_CLOEXEC);
+            if (fd < 0) { free(buf); continue; }
+
+            n = read(fd, buf, (size_t)st.st_size);
+            close(fd);
+
+            if (n > 0) {
+                for (i = 0; i < (size_t)n; i++)
+                    if (buf[i] == '\0') buf[i] = '\n';
+                buf[n] = '\0';
+            }
+
+            found = (n > 0 && strstr(buf, compat) != NULL);
+            free(buf);
+
+            if (found) { closedir(dir); return true; }
+        }
+    }
+
+    closedir(dir);
+    return false;
+}
+
+static bool dt_find_compatible(const char *compat)
+{
+    if (!compat || !*compat)
+        return false;
+
+    return dt_search_dir("/proc/device-tree", compat);
+}
+
+static void detect_display_mode(void)
+{
+    if (dt_find_compatible("adi,adv7535")) {
+        printf("[MODE] DTB: adi,adv7535 found → display mode\n");
+        no_display_mode = false;
+        return;
+    }
+
+    if (dt_find_compatible("lontium,lt9611uxc")) {
+        printf("[MODE] DTB: lontium,lt9611uxc found → display mode\n");
+        no_display_mode = false;
+        return;
+    }
+
+    printf("[MODE] DTB: no display bridge found → no-display mode\n");
+    no_display_mode = true;
+}
 
 struct drm_imx_dpu_get_dma_address {
     __u32 handle;
@@ -227,6 +319,11 @@ static void init_display()
 {
     drmSetClientCap(fd, DRM_CLIENT_CAP_ATOMIC, 1);
 
+    if (no_display_mode) {
+        printf("[INIT] no-display mode, skipping connector init\n");
+        return;
+    }
+
     drmModeRes *res = drmModeGetResources(fd);
     if (!res) {
         log_error("resources");
@@ -287,6 +384,12 @@ props:
 
 static void atomic_modeset(int src_w, int src_h)
 {
+    if (no_display_mode) {
+        printf("[MODESET] no-display mode, skipping (%dx%d)\n",
+               src_w, src_h);
+        return;
+    }
+
     if (!is_display_connected()) {
         printf("[INFO] HDMI disconnected. "
                "Skipping atomic commit (%dx%d)\n",
@@ -442,6 +545,11 @@ static int wait_for_fb0(void)
 {
     int retry = 50;
 
+    if (no_display_mode) {
+        printf("[FB] no-display mode, skipping /dev/fb0 wait\n");
+        return 0;
+    }
+
     while (retry-- && running) {
 
         if (access("/dev/fb0", F_OK) == 0) {
@@ -534,7 +642,7 @@ static void handle_event(char *buf, int len)
                 update_last_resolution(w, h);
                 save_resolution();
 
-                if (running)
+                if (running && !no_display_mode)
                     atomic_modeset(w, h);
                 /* Update stream2v4l2 resolution via sysfs */
                 {
@@ -551,7 +659,7 @@ static void handle_event(char *buf, int len)
         i += strlen(msg) + 1;
     }
 
-    if (hotplug && running) {
+    if (hotplug && running && !no_display_mode) {
 
         printf("[HOTPLUG DETECTED]\n");
         if (is_display_connected()) {
@@ -674,6 +782,8 @@ static void stop_handler(int sig)
 
 int main()
 {
+    detect_display_mode();
+
     /* Wait for /dev/dri/card0 to appear */
     while (running && access(DRM_DEV, F_OK) != 0)
         usleep(100000);
@@ -696,34 +806,38 @@ int main()
     if (!running)
         return 0;
 
-    fd = open(DRM_DEV, O_RDWR | O_CLOEXEC);
-    if (fd < 0) {
-        log_error("open drm");
-        return 1;
+    if (!no_display_mode) {
+        fd = open(DRM_DEV, O_RDWR | O_CLOEXEC);
+        if (fd < 0) {
+            log_error("open drm");
+            return 1;
+        }
+
+        /* Retry init_display() until connector is fully enumerated */
+        int retries = 20;
+        while (running && retries-- > 0) {
+            init_display();
+            if (conn_id && crtc_id && plane_id)
+                break;
+            printf("[MAIN] display not ready yet, retrying...\n");
+            usleep(500000); /* 500 ms */
+        }
+
+        if (!conn_id || !crtc_id || !plane_id) {
+            printf("[MAIN] display init failed after retries\n");
+            close(fd);
+            return 1;
+        }
+        load_resolution();
+
+        create_fb(mode.hdisplay, mode.vdisplay);
     }
-
-    /* Retry init_display() until connector is fully enumerated */
-    int retries = 20;
-    while (running && retries-- > 0) {
-        init_display();
-        if (conn_id && crtc_id && plane_id)
-            break;
-        printf("[MAIN] display not ready yet, retrying...\n");
-        usleep(500000); /* 500 ms */
+    else {
+        printf("[MAIN] mode : no-display \n");
+        load_resolution();
     }
-
-    if (!conn_id || !crtc_id || !plane_id) {
-        printf("[MAIN] display init failed after retries\n");
-        close(fd);
-        return 1;
-    }
-
-    load_resolution();
-
-    create_fb(mode.hdisplay, mode.vdisplay);
-
     /* Update stream2v4l2 resolution via sysfs */
-    {
+    if (last_w != 0 || last_h != 0 ) {
         char val[32];
         FILE *f;
         snprintf(val, sizeof(val), "%dx%d:%d", last_w, last_h, (int)last_w * 4);
@@ -735,7 +849,8 @@ int main()
     }
 
     if (running) {
-        atomic_modeset(last_w, last_h);
+        if (!no_display_mode)
+            atomic_modeset(last_w, last_h);
         uevent_loop();
     }
 
