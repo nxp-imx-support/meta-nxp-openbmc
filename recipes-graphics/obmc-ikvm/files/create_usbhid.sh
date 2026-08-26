@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2026 NXP
+
 hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid"
 
 dev_name=$(ls /sys/class/udc | head -n1)
@@ -29,7 +32,9 @@ create_hid() {
     echo "virtual_input" > strings/0x409/product
     echo "OBMC0001" > strings/0x409/serialnumber
 
-    # Create HID keyboard function
+    # ------------------------------------------------------------------ #
+    # HID function 0: Keyboard                                           #
+    # ------------------------------------------------------------------ #
     mkdir functions/hid.0
 
     echo 1 > functions/hid.0/protocol	# 1: keyboard
@@ -71,7 +76,9 @@ create_hid() {
     #  0xc0        // END_COLLECTION
     printf '\x05\x01\x09\x06\xa1\x01\x05\x07\x19\xe0\x29\xe7\x15\x00\x25\x01\x75\x01\x95\x08\x81\x02\x95\x01\x75\x08\x81\x03\x95\x05\x75\x01\x05\x08\x19\x01\x29\x05\x91\x02\x95\x01\x75\x03\x91\x03\x95\x06\x75\x08\x15\x00\x25\x65\x05\x07\x19\x00\x29\x65\x81\x00\xc0' > functions/hid.0/report_desc
 
-    # Create HID mouse function
+    # ------------------------------------------------------------------ #
+    # HID function 1: Absolute mouse                                     #
+    # ------------------------------------------------------------------ #
     mkdir functions/hid.1
 
     echo 2 > functions/hid.1/protocol	# 2: mouse
@@ -119,7 +126,53 @@ create_hid() {
     #  0xc0              // END_COLLECTION
     printf '\x05\x01\x09\x02\xa1\x01\x09\x01\xa1\x00\x05\x09\x19\x01\x29\x03\x15\x00\x25\x01\x95\x03\x75\x01\x81\x02\x95\x01\x75\x05\x81\x03\x05\x01\x09\x30\x09\x31\x35\x00\x46\xff\x7f\x15\x00\x26\xff\x7f\x65\x11\x55\x00\x75\x10\x95\x02\x81\x02\x09\x38\x15\xff\x25\x01\x35\x00\x45\x00\x75\x08\x95\x01\x81\x06\xc0\xc0' > functions/hid.1/report_desc
 
-    # Create configuration
+    # ------------------------------------------------------------------ #
+    # HID function 2: Relative mouse                                     #
+    # ------------------------------------------------------------------ #
+    mkdir functions/hid.2
+
+    echo 2 > functions/hid.2/protocol	# 2: mouse
+    echo 4 > functions/hid.2/report_length
+    echo 1 > functions/hid.2/subclass
+
+    # Binary HID relative mouse descriptor
+    #  0x05, 0x01,  // USAGE_PAGE (Generic Desktop)
+    #  0x09, 0x02,  // USAGE (Mouse)
+    #  0xa1, 0x01,  // COLLECTION (Application)
+    #  0x09, 0x01,  //   USAGE (Pointer)
+    #  0xa1, 0x00,  //   COLLECTION (Physical)
+    #  0x05, 0x09,  //     USAGE_PAGE (Button)
+    #  0x19, 0x01,  //     USAGE_MINIMUM (Button 1)
+    #  0x29, 0x03,  //     USAGE_MAXIMUM (Button 3)
+    #  0x15, 0x00,  //     LOGICAL_MINIMUM (0)
+    #  0x25, 0x01,  //     LOGICAL_MAXIMUM (1)
+    #  0x95, 0x03,  //     REPORT_COUNT (3)
+    #  0x75, 0x01,  //     REPORT_SIZE (1)
+    #  0x81, 0x02,  //     INPUT (Data,Var,Abs)
+    #  0x95, 0x01,  //     REPORT_COUNT (1)
+    #  0x75, 0x05,  //     REPORT_SIZE (5)
+    #  0x81, 0x03,  //     INPUT (Cnst,Var,Abs)  -- padding
+    #  0x05, 0x01,  //     USAGE_PAGE (Generic Desktop)
+    #  0x09, 0x30,  //     USAGE (X)
+    #  0x09, 0x31,  //     USAGE (Y)
+    #  0x15, 0x81,  //     LOGICAL_MINIMUM (-127)
+    #  0x25, 0x7f,  //     LOGICAL_MAXIMUM (127)
+    #  0x75, 0x08,  //     REPORT_SIZE (8)
+    #  0x95, 0x02,  //     REPORT_COUNT (2)
+    #  0x81, 0x06,  //     INPUT (Data,Var,Rel)
+    #  0x09, 0x38,  //     USAGE (Wheel)
+    #  0x15, 0x81,  //     LOGICAL_MINIMUM (-127)
+    #  0x25, 0x7f,  //     LOGICAL_MAXIMUM (127)
+    #  0x75, 0x08,  //     REPORT_SIZE (8)
+    #  0x95, 0x01,  //     REPORT_COUNT (1)
+    #  0x81, 0x06,  //     INPUT (Data,Var,Rel)
+    #  0xc0,        //   END_COLLECTION
+    #  0xc0         // END_COLLECTION
+    printf '\x05\x01\x09\x02\xa1\x01\x09\x01\xa1\x00\x05\x09\x19\x01\x29\x03\x15\x00\x25\x01\x95\x03\x75\x01\x81\x02\x95\x01\x75\x05\x81\x03\x05\x01\x09\x30\x09\x31\x15\x81\x25\x7f\x75\x08\x95\x02\x81\x06\x09\x38\x15\x81\x25\x7f\x75\x08\x95\x01\x81\x06\xc0\xc0' > functions/hid.2/report_desc
+
+    # ------------------------------------------------------------------ #
+    # Configuration                                                       #
+    # ------------------------------------------------------------------ #
     mkdir configs/c.1
     mkdir configs/c.1/strings/0x409
 
@@ -127,9 +180,10 @@ create_hid() {
     echo 200 > configs/c.1/MaxPower
     echo "" > configs/c.1/strings/0x409/configuration
 
-    # Link HID functions to configuration
-    ln -s functions/hid.0 configs/c.1
-    ln -s functions/hid.1 configs/c.1
+    # Link all HID functions to configuration
+    ln -s functions/hid.0 configs/c.1	# keyboard
+    ln -s functions/hid.1 configs/c.1	# absolute mouse
+    ln -s functions/hid.2 configs/c.1	# relative mouse
 }
 
 connect_hid() {
@@ -144,17 +198,66 @@ disconnect_hid() {
     fi
 }
 
+get_udc_driver_path() {
+    local drv
+    drv=$(readlink -f "/sys/class/udc/${dev_name}/device/driver" 2>/dev/null)
+    if [ -z "${drv}" ]; then
+        echo "Cannot resolve UDC driver for ${dev_name}" >&2
+        exit 1
+    fi
+    echo "${drv}"
+}
+
+unbind_hid() {
+    local drv
+    drv=$(get_udc_driver_path) || exit 1
+    echo "Unbinding UDC: ${dev_name} from ${drv}"
+    echo "${dev_name}" > "${drv}/unbind"
+}
+
+bind_hid() {
+    local drv="${UDC_DRIVER_PATH}"
+    if [ -z "${drv}" ]; then
+        drv=$(get_udc_driver_path)
+    fi
+    echo "Binding UDC: ${dev_name} to ${drv}"
+    echo "${dev_name}" > "${drv}/bind"
+}
+
+reset_hid() {
+    UDC_DRIVER_PATH=$(get_udc_driver_path)
+    export UDC_DRIVER_PATH
+    unbind_hid
+    bind_hid
+    sleep 1
+    disconnect_hid
+    sleep 1
+    connect_hid
+    sync
+    echo "Reset successfully"
+}
+
 if [ ! -e "${hid_conf_directory}" ]; then
     create_hid
 else
     cd "${hid_conf_directory}" || exit 1
 fi
 
-if [ "$1" = "connect" ]; then
-    connect_hid
-elif [ "$1" = "disconnect" ]; then
-    disconnect_hid
-else
-    echo >&2 "Invalid option: $1. Use 'connect' or 'disconnect'."
-    exit 1
-fi
+case "$1" in
+    connect)
+        connect_hid
+        ;;
+    disconnect)
+        disconnect_hid
+        ;;
+    reset)
+        # Full UDC reset: resolve driver, unbind, wait 1 s, bind.
+        # Resets a stuck USB connection without destroying the gadget.
+        reset_hid
+        ;;
+    *)
+        echo >&2 "Invalid option: $1"
+        echo >&2 "Usage: $0 {connect|disconnect|reset}"
+        exit 1
+        ;;
+esac
