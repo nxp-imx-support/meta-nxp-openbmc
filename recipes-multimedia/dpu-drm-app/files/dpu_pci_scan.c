@@ -483,8 +483,14 @@ void load_resolution(void)
         last_w = default_w;
         last_h = default_h;
     }
-
     fclose(f);
+
+    /* hard set for no display mode */
+    if (no_display_mode && (last_w == 0 || last_h == 0)) {
+        last_w = 1920;
+        last_h = 1080;
+        save_resolution();
+    }
 
     printf("[LOAD] restored %dx%d\n", last_w, last_h);
 }
