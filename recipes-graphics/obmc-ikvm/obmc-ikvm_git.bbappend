@@ -1,14 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://create_usbhid.sh"
-
-do_install:append() {
-    echo "Installing patched create_usbhid.sh from meta-nxp"
-
-    install -m 0755 ${WORKDIR}/sources/create_usbhid.sh ${D}${bindir}/create_usbhid.sh
-}
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
 SRC_URI += " \
     file://create_usbhid.sh \
     file://load_kvm_modules.sh \
@@ -16,6 +7,7 @@ SRC_URI += " \
     file://start-obmc-ikvm.sh \
     file://override.conf \
     file://kvm.conf \
+    file://0001-obmc-ikvm-input-Add-no-udc-manage-option.patch \
 "
 
 do_install:append() {

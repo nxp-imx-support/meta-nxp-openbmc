@@ -1,0 +1,321 @@
+From 5c63810f3d4b4db5075affe60e4b89e5d6c0809e Mon Sep 17 00:00:00 2001
+From: Shreyash Damanwala <shreyash.damanwala@nxp.com>
+Date: Wed, 26 Aug 2026 10:21:18 +0530
+Subject: [PATCH] obmc-ikvm: input: Add --no-udc manage option
+
+- New CLI flag (-n / --no-udc manage)
+- Skip UDC bind/unbind; hidg devices stay persistent
+- Useful when external tools manage UDC (usb-hid-forward etc.)
+
+Upstream-Status: Pending
+Signed-off-by: Shreyash Damanwala <shreyash.damanwala@nxp.com>
+---
+ ikvm_args.cpp    |  17 +++++--
+ ikvm_args.hpp    |  16 +++++++
+ ikvm_input.cpp   | 113 ++++++++++++++++++++++++++++-------------------
+ ikvm_input.hpp   |  14 +++++-
+ ikvm_manager.cpp |   3 +-
+ 5 files changed, 112 insertions(+), 51 deletions(-)
+
+diff --git a/ikvm_args.cpp b/ikvm_args.cpp
+index 11d19f0..a9dceb2 100644
+--- a/ikvm_args.cpp
++++ b/ikvm_args.cpp
+@@ -9,16 +9,17 @@ namespace ikvm
+ {
+ Args::Args(int argc, char* argv[]) :
+     frameRate(30), subsampling(0), timeoutSeconds(-1), calcFrameCRC{false},
+-    commandLine(argc, argv)
++    noUdcManage(false), commandLine(argc, argv)
+ {
+     int option;
+-    const char* opts = "f:s:hk:p:u:v:ct:";
++    const char* opts = "f:s:hk:p:u:v:ct:n";
+     struct option lopts[] = {
+         {"frameRate", 1, nullptr, 'f'},      {"subsampling", 1, nullptr, 's'},
+         {"help", 0, nullptr, 'h'},           {"keyboard", 1, nullptr, 'k'},
+         {"mouse", 1, nullptr, 'p'},          {"udcName", 1, nullptr, 'u'},
+         {"videoDevice", 1, nullptr, 'v'},    {"calcCRC", 0, nullptr, 'c'},
+-        {"timeoutSeconds", 1, nullptr, 't'}, {nullptr, 0, nullptr, 0}};
++        {"timeoutSeconds", 1, nullptr, 't'}, {"no-udc-manage", 0, nullptr, 'n'},
++        {nullptr, 0, nullptr, 0}};
+ 
+     while ((option = getopt_long(argc, argv, opts, lopts, nullptr)) != -1)
+     {
+@@ -57,13 +58,15 @@ Args::Args(int argc, char* argv[]) :
+                 if (timeoutSeconds < 0)
+                     timeoutSeconds = -1;
+                 break;
++            case 'n':
++                noUdcManage = true;
++                break;
+         }
+     }
+ }
+ 
+ void Args::printUsage()
+ {
+-    // use fprintf(stderr to match rfbUsage()
+     fprintf(stderr, "OpenBMC IKVM daemon\n");
+     fprintf(stderr, "Usage: obmc-ikvm [options]\n");
+     fprintf(stderr, "-f frame rate          try this frame rate\n");
+@@ -78,6 +81,12 @@ void Args::printUsage()
+         stderr,
+         "-c, --calcCRC          Calculate CRC for each frame to save bandwidth\n");
+     fprintf(stderr, "-t timeout             Idle timeout in seconds \n");
++    fprintf(stderr,
++            "-n, --no-udc-manage    Do not bind/unbind the UDC on client\n"
++            "                       connect/disconnect.  hidg* devices remain\n"
++            "                       persistent and are managed externally.\n"
++            "                       Implies UDC must already be bound before\n"
++            "                       obmc-ikvm starts.\n");
+     rfbUsage();
+ }
+ 
+diff --git a/ikvm_args.hpp b/ikvm_args.hpp
+index beca8d9..68c73e1 100644
+--- a/ikvm_args.hpp
++++ b/ikvm_args.hpp
+@@ -138,6 +138,20 @@ class Args
+         return timeoutSeconds;
+     }
+ 
++    /*
++     * @brief Get the no-UDC-manage flag
++     *
++     * @return True if obmc-ikvm must NOT bind/unbind the UDC.
++     *         When true, the hidg* devices are persistent and managed
++     *         externally (e.g. by usb-hid-forward).  obmc-ikvm will
++     *         open/close the hidg fds on client connect/disconnect but
++     *         will never write to the UDC configfs file.
++     */
++    inline bool getNoUdcManage() const
++    {
++        return noUdcManage;
++    }
++
+   private:
+     /* @brief Prints the application usage to stderr */
+     void printUsage();
+@@ -161,6 +175,8 @@ class Args
+     int timeoutSeconds;
+     /* @brief Identical frames detection */
+     bool calcFrameCRC;
++    /* @brief When true, UDC bind/unbind is suppressed */
++    bool noUdcManage;
+     /* @brief Original command line arguments passed to the application */
+     CommandLine commandLine;
+ };
+diff --git a/ikvm_input.cpp b/ikvm_input.cpp
+index 37d5a8f..2e84c7c 100644
+--- a/ikvm_input.cpp
++++ b/ikvm_input.cpp
+@@ -23,12 +23,16 @@ using namespace phosphor::logging;
+ using namespace sdbusplus::xyz::openbmc_project::Common::File::Error;
+ 
+ Input::Input(const std::string& kbdPath, const std::string& ptrPath,
+-             const std::string& udc) :
++             const std::string& udc, bool noUdcManage) :
+     keyboardFd(-1), pointerFd(-1), keyboardReport{0}, pointerReport{0},
+-    keyboardPath(kbdPath), pointerPath(ptrPath), udcName(udc)
++    keyboardPath(kbdPath), pointerPath(ptrPath), udcName(udc),
++    noUdcManage(noUdcManage)
+ {
+-    hidUdcStream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+-    hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
++    if (!noUdcManage)
++    {
++        hidUdcStream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
++        hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
++    }
+ }
+ 
+ Input::~Input()
+@@ -44,61 +48,72 @@ Input::~Input()
+     }
+ 
+     disconnect();
+-    hidUdcStream.close();
++    if (!noUdcManage)
++    {
++        hidUdcStream.close();
++    }
+ }
+ 
+ void Input::connect()
+ {
+-    try
++    if (!noUdcManage)
+     {
+-        if (udcName.empty())
++        try
+         {
+-            bool found = false;
+-            for (const auto& port : fs::directory_iterator(usbVirtualHubPath))
++            if (udcName.empty())
+             {
+-                // /sys/bus/platform/devices/1e6a0000.usb-vhub/1e6a0000.usb-vhub:pX
+-                if (fs::is_directory(port) && !fs::is_symlink(port))
++                bool found = false;
++                for (const auto& port : fs::directory_iterator(usbVirtualHubPath))
+                 {
+-                    for (const auto& gadget :
+-                         fs::directory_iterator(port.path()))
++                    // /sys/bus/platform/devices/1e6a0000.usb-vhub/1e6a0000.usb-vhub:pX
++                    if (fs::is_directory(port) && !fs::is_symlink(port))
+                     {
+-                        // Kernel 6.0:
+-                        // /sys/.../1e6a0000.usb-vhub:pX/gadget.Y/suspended
+-                        // Kernel 5.15:
+-                        // /sys/.../1e6a0000.usb-vhub:pX/gadget/suspended
+-                        if (fs::is_directory(gadget) &&
+-                            gadget.path().string().find("gadget") !=
+-                                std::string::npos &&
+-                            !fs::exists(gadget.path() / "suspended"))
++                        for (const auto& gadget :
++                            fs::directory_iterator(port.path()))
+                         {
+-                            const std::string portId = port.path().filename();
+-                            hidUdcStream << portId << std::endl;
+-                            found = true;
+-                            break;
++                            // Kernel 6.0:
++                            // /sys/.../1e6a0000.usb-vhub:pX/gadget.Y/suspended
++                            // Kernel 5.15:
++                            // /sys/.../1e6a0000.usb-vhub:pX/gadget/suspended
++                            if (fs::is_directory(gadget) &&
++                                gadget.path().string().find("gadget") !=
++                                    std::string::npos &&
++                                !fs::exists(gadget.path() / "suspended"))
++                            {
++                                const std::string portId = port.path().filename();
++                                hidUdcStream << portId << std::endl;
++                                found = true;
++                                break;
++                            }
+                         }
+                     }
++                    if (found)
++                    {
++                        break;
++                    }
+                 }
+-                if (found)
+-                {
+-                    break;
+-                }
++            }
++            else // If UDC has been specified by '-u' parameter, connect to it.
++            {
++                hidUdcStream << udcName << std::endl;
+             }
+         }
+-        else // If UDC has been specified by '-u' parameter, connect to it.
++        catch (fs::filesystem_error& e)
+         {
+-            hidUdcStream << udcName << std::endl;
++            lg2::error("Failed to search USB virtual hub port {ERROR}", "ERROR",
++                    e.what());
++            return;
++        }
++        catch (std::ofstream::failure& e)
++        {
++            lg2::error("Failed to connect HID gadget {ERROR}", "ERROR", e.what());
++            return;
+         }
+     }
+-    catch (fs::filesystem_error& e)
+-    {
+-        lg2::error("Failed to search USB virtual hub port {ERROR}", "ERROR",
+-                   e.what());
+-        return;
+-    }
+-    catch (std::ofstream::failure& e)
++    else
+     {
+-        lg2::error("Failed to connect HID gadget {ERROR}", "ERROR", e.what());
+-        return;
++        lg2::info("no-udc-manage: skipping UDC bind — hidg devices are "
++                  "persistent");
+     }
+ 
+     if (!keyboardPath.empty())
+@@ -143,14 +158,22 @@ void Input::disconnect()
+         pointerFd = -1;
+     }
+ 
+-    try
++    if (!noUdcManage)
+     {
+-        hidUdcStream << "" << std::endl;
++        try
++        {
++            hidUdcStream << "" << std::endl;
++        }
++        catch (std::ofstream::failure& e)
++        {
++            lg2::error("Failed to disconnect HID gadget {ERROR}", "ERROR",
++                    e.what());
++        }
+     }
+-    catch (std::ofstream::failure& e)
++    else
+     {
+-        lg2::error("Failed to disconnect HID gadget {ERROR}", "ERROR",
+-                   e.what());
++        lg2::info("no-udc-manage: skipping UDC unbind — hidg devices remain "
++                  "persistent");
+     }
+ }
+ 
+diff --git a/ikvm_input.hpp b/ikvm_input.hpp
+index afd2561..105c6c4 100644
+--- a/ikvm_input.hpp
++++ b/ikvm_input.hpp
+@@ -24,9 +24,16 @@ class Input
+      * @param[in] kbdPath - Path to the USB keyboard device
+      * @param[in] ptrPath - Path to the USB mouse device
+      * @param[in] udc - Name of UDC
++     * @param[in] noUdcManage - When true, obmc-ikvm will NOT bind/unbind
++     *                          the UDC on client connect/disconnect.
++     *                          The hidg* devices are assumed to be
++     *                          persistent and managed externally
++     *                          obmc-ikvm still opens/closes the hidg fds
++     *                          so HID reports are forwarded while a VNC
++     *                          client is connected.
+      */
+     Input(const std::string& kbdPath, const std::string& ptrPath,
+-          const std::string& udc);
++          const std::string& udc, bool noUdcManage = false);
+     ~Input();
+     Input(const Input&) = delete;
+     Input& operator=(const Input&) = delete;
+@@ -123,6 +130,11 @@ class Input
+     std::map<int, int> keysDown;
+     /* @brief Handle of the HID gadget UDC */
+     std::ofstream hidUdcStream;
++    /*
++     * @brief When true, UDC bind/unbind is suppressed on connect/disconnect.
++     *        hidg* devices are persistent — only the fds are opened/closed.
++     */
++    bool noUdcManage;
+     /* @brief Mutex for sending keyboard reports */
+     std::mutex keyMutex;
+     /* @brief Mutex for sending pointer reports */
+diff --git a/ikvm_manager.cpp b/ikvm_manager.cpp
+index b283b87..221d709 100644
+--- a/ikvm_manager.cpp
++++ b/ikvm_manager.cpp
+@@ -6,7 +6,8 @@ namespace ikvm
+ {
+ Manager::Manager(const Args& args) :
+     continueExecuting(true), serverDone(false), videoDone(true),
+-    input(args.getKeyboardPath(), args.getPointerPath(), args.getUdcName()),
++    input(args.getKeyboardPath(), args.getPointerPath(), args.getUdcName(),
++          args.getNoUdcManage()),
+     video(args.getVideoPath(), input, args.getFrameRate(),
+           args.getSubsampling()),
+     server(args, input, video)
+-- 
+2.34.1
+

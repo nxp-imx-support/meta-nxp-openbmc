@@ -23,11 +23,15 @@ case "$kvm_mode" in
         ;;
 esac
 
+# -u (UDC name) is omitted: UDC lifecycle is managed by usb-hid-forwarder.service
+# via create_usbhid.sh; --no-udc-manage tells obmc-ikvm not to bind/unbind the UDC.
+
 exec /usr/bin/obmc-ikvm \
     -v /dev/obmc-ikvm \
     -k "$KEYBOARD_DEV" \
     -p "$MOUSE_DEV" \
-    -u 4c100000.usb \
     -f 30 \
     -deferptrupdate 2 \
-    
+    -deferupdate 32 \
+    --no-udc-manage
+

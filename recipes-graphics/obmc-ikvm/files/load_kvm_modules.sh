@@ -31,9 +31,6 @@ pcie_kvm)
     echo "PCIe KVM mode"
     load_module stream2v4l2
 
-    if [ -x /usr/bin/create_usbhid.sh ]; then
-        /usr/bin/create_usbhid.sh disconnect
-    fi
     ;;
 
 pcie_video_usb_hid)
@@ -41,9 +38,6 @@ pcie_video_usb_hid)
 
     load_module stream2v4l2
 
-    if [ -x /usr/bin/create_usbhid.sh ]; then
-        /usr/bin/create_usbhid.sh disconnect
-    fi
     ;;
 
 *)
