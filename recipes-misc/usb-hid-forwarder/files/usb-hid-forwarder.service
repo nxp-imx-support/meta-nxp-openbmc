@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2026 NXP
+
+[Unit]
+Description=NXP i.MX95/943 USB HID forwarder
+After=systemd-udevd.service local-fs.target
+Wants=systemd-udevd.service
+
+[Service]
+Type=simple
+
+ExecCondition=/bin/sh -c '\
+    MODE=$(grep -m1 "^kvm_mode=" /etc/kvm.conf 2>/dev/null | cut -d= -f2); \
+    [ "${MODE:-pcie_video_usb_hid}" = "pcie_video_usb_hid" ]'
+
+ExecStartPre=/usr/bin/create_usbhid.sh connect
+ExecStart=/usr/bin/usb-hid-forwarder
+ExecStopPost=/usr/bin/create_usbhid.sh disconnect
+
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target
+
