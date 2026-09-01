@@ -8,7 +8,7 @@ port A and forwards them as USB HID reports to /dev/hidg0 (keyboard), \
 Only active when kvm_mode=pcie_video_usb_hid in /etc/kvm.conf."
 
 LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://usb-hid-forwarder.c;md5=401a01f26bd3912c2a4e1f652df57736"
+LIC_FILES_CHKSUM = "file://usb-hid-forwarder.c;md5=a878afb50b2600f919b677376c8af9dc"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
