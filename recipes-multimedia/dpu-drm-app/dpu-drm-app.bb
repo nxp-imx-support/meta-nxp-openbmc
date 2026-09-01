@@ -5,7 +5,7 @@ SUMMARY = "DPU DRM Atomic Scaler App"
 DESCRIPTION = "Atomic DRM modeset + scaling test application"
 
 LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://dpu_pci_scan.c;md5=7fc3e9938e018d0d29bd8bb37897b3a3"
+LIC_FILES_CHKSUM = "file://dpu_pci_scan.c;md5=9140f11a6edc852aa1bbfbe5a11549e8"
 
 SRC_URI = "file://dpu_pci_scan.c \
            file://dpu-drm-app.service"
