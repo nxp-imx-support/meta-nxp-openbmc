@@ -31,7 +31,5 @@ exec /usr/bin/obmc-ikvm \
     -k "$KEYBOARD_DEV" \
     -p "$MOUSE_DEV" \
     -f 30 \
-    -deferptrupdate 2 \
-    -deferupdate 32 \
     --no-udc-manage
 

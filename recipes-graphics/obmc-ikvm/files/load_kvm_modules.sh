@@ -29,13 +29,14 @@ case "$KVM_MODE" in
 
 pcie_kvm)
     echo "PCIe KVM mode"
+    load_module mxc-jpeg-encdec
     load_module stream2v4l2
 
     ;;
 
 pcie_video_usb_hid)
     echo "PCIe Video + USB HID mode"
-
+    load_module mxc-jpeg-encdec
     load_module stream2v4l2
 
     ;;
