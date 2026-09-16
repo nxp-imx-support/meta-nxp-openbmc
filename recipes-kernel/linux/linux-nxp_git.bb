@@ -50,6 +50,16 @@ IMX91_IMX93_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', '
     file://0007-imx93-usb-peripheral-mode.patch \
 ', d)}"
 
+# The internal mailbox_test branch now carries the imx91/imx93 openbmc BMC
+# device trees (imx91-11x11-frdm-bmc, imx93-11x11-frdm-bmc, etc.), their
+# arch/arm64/boot/dts/freescale/Makefile dtb rules, and the net/mctp/Kconfig
+# change natively, so patch 0005 no longer applies (files already in the tree,
+# Makefile/Kconfig hunks conflict). Leave this empty on internal builds to
+# avoid the double apply. In the public GitHub build the same patch is still
+# applied through IMX91_IMX93_PATCHES, which is empty on internal builds.
+IMX91_BMC_DTS_INTERNAL = ""
+
+
 # imx943 patches
 IMX943_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', ' \
     file://0008-imx943-local-display.patch \
