@@ -1,0 +1,15 @@
+[Unit]
+Description=OBMF enclosure_identify LED group to gpiochip bridge
+Wants=mapper-wait@-xyz-openbmc_project-led-groups.service
+After=mapper-wait@-xyz-openbmc_project-led-groups.service
+After=xyz.openbmc_project.LED.GroupManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env obmf-led-bridge.sh
+Restart=always
+RestartSec=2
+SyslogIdentifier=obmf-led-bridge
+
+[Install]
+WantedBy=multi-user.target
