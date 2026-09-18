@@ -83,7 +83,7 @@ IKVM_PCIE_EP_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', 
 
 
 # Apply common cfg + per-platform patches via MACHINE override
-SRC_URI:append:evb-imx91     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
+SRC_URI:append:evb-imx91     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${IMX91_BMC_DTS_INTERNAL} ${BSP_FIXES}"
 SRC_URI:append:evb-imx93     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
 SRC_URI:append:evb-imx943    = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX943_PATCHES} ${BSP_FIXES}"
 SRC_URI:append:evb-imx943-am = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX943_PATCHES} ${BSP_FIXES}"
