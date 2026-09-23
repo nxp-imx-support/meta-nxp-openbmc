@@ -50,11 +50,72 @@ INV_SVC="xyz.openbmc_project.Inventory.Manager"
 INV_OBJ="/xyz/openbmc_project/inventory"
 INV_IFACE="xyz.openbmc_project.Inventory.Manager"
 
+# ---------------------------------------------------------------------------
+# Host FRU identity, read from the FPGA over the mailbox.
+#
+# The managed server's identity belongs to the host, so it must be read from
+# the FPGA rather than hard-coded here. The PLDM sub-driver exposes each field
+# as a debugfs file that it assembles from the host FRU register window:
+#
+#   fru_manufacturer  fru_model  fru_serial  fru_part_number
+#
+# On a real platform these originate in the host's FRU EEPROM / PLDM FRU
+# record; with fpga_sim they come from the simulator's FRU model. Either way
+# the BMC just reads them.
+#
+# If the files are missing (older DTS without the nxp,fru-*-address
+# properties, or the mailbox driver not loaded) the corresponding Redfish
+# field is left empty rather than being filled with an invented value - an
+# empty field is honest about the data being unavailable, a fabricated one is
+# not.
+# ---------------------------------------------------------------------------
+PLDM_DIR="${FPGA_INV_PLDM_DIR:-/sys/kernel/debug/imx9-qspi-pldm/pldm_host0}"
+
+HOST_MANUFACTURER=""
+HOST_MODEL=""
+HOST_SERIAL=""
+HOST_PART=""
+
 # Inventory root that phosphor-inventory-manager hangs objects under. Paths
 # passed to Notify are relative to INV_OBJ.
 SYS="/system/chassis"
 
 log_info() { echo "fpga_inventory_bridge: $*" ; }
+
+# Read one host FRU string from the PLDM debugfs surface, or "" if absent.
+read_fru() {
+	_f="$PLDM_DIR/$1"
+	if [ -r "$_f" ]; then
+		tr -d '\n' < "$_f" 2>/dev/null
+	else
+		echo ""
+	fi
+}
+
+# ---------------------------------------------------------------------------
+# Populate HOST_* from the FPGA. Waits briefly for the debugfs surface: the
+# mailbox driver has to finish its handshake before the PLDM bank appears, and
+# on a cold boot this service can win that race.
+# ---------------------------------------------------------------------------
+load_host_fru() {
+	_tries=0
+	while [ "$_tries" -lt 30 ]; do
+		[ -r "$PLDM_DIR/fru_model" ] && break
+		_tries=$((_tries + 1))
+		sleep 1
+	done
+
+	HOST_MANUFACTURER=$(read_fru fru_manufacturer)
+	HOST_MODEL=$(read_fru fru_model)
+	HOST_SERIAL=$(read_fru fru_serial)
+	HOST_PART=$(read_fru fru_part_number)
+
+	if [ -n "$HOST_MODEL" ] || [ -n "$HOST_SERIAL" ]; then
+		log_info "host FRU from FPGA: mfr='$HOST_MANUFACTURER' model='$HOST_MODEL' sn='$HOST_SERIAL' pn='$HOST_PART'"
+	else
+		log_info "WARN: no host FRU available under $PLDM_DIR - server identity fields will be empty"
+	fi
+}
 
 # ---------------------------------------------------------------------------
 # publish_item - create/refresh one inventory object
@@ -95,41 +156,64 @@ publish_item() {
 }
 
 # ---------------------------------------------------------------------------
-# Simulated host FRU set.
+# Host FRU set.
 #
-# Keep this list consistent with the "Exposes" array of imx91-system.json:
-# that file documents the topology for Entity Manager, this list is what
-# actually reaches Redfish. Values are representative of the iMX91 FRDM BMC
-# reference setup and are simulation data, not read from hardware.
+# The chassis-level identity (manufacturer / model / serial / part) is the
+# HOST_* data read from the FPGA above - it describes the managed server and is
+# what Redfish shows as "Server information". It is deliberately not
+# hard-coded here.
+#
+# The per-component descriptors (which DIMM part, which PSU model) are not
+# carried by the host FRU register window, which models a chassis-level record
+# only. Rather than invent per-part strings, each component inherits the host
+# manufacturer and is distinguished by its PrettyName plus a positional serial
+# suffix derived from the host serial. That keeps every string traceable to
+# data the FPGA actually reported. Extending the FPGA FRU window with
+# per-component records is the natural follow-up once the real host provides
+# them.
+#
+# Keep the component list consistent with the "Exposes" array of
+# imx91-system.json: that file documents the topology for Entity Manager,
+# this list is what actually reaches Redfish.
 # ---------------------------------------------------------------------------
 publish_all() {
+	# Positional serials derived from the host serial so each component is
+	# distinguishable while remaining traceable to the reported host FRU.
+	_sn="${HOST_SERIAL:-UNKNOWN}"
+
+	# -- Chassis: the managed server itself ----------------------------
+	publish_item "$SYS" \
+		"xyz.openbmc_project.Inventory.Item.Chassis" \
+		"${HOST_MODEL:-Managed Server}" \
+		"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" "$HOST_SERIAL"
+
 	# -- Processors ----------------------------------------------------
 	publish_item "$SYS/motherboard/cpu0" \
 		"xyz.openbmc_project.Inventory.Item.Cpu" \
-		"iMX91 Application Processor" \
-		"NXP" "i.MX 91 Cortex-A55" "MIMX9131" "CPU-0001"
+		"Processor 0" \
+		"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" "$_sn-CPU0"
 
 	# -- Memory (DIMM slots) -------------------------------------------
 	publish_item "$SYS/motherboard/dimm0" \
 		"xyz.openbmc_project.Inventory.Item.Dimm" \
 		"DIMM 0" \
-		"Micron" "MT41K256M16" "MT41K256M16TW" "DIMM-0001"
+		"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" "$_sn-DIMM0"
 
 	publish_item "$SYS/motherboard/dimm1" \
 		"xyz.openbmc_project.Inventory.Item.Dimm" \
 		"DIMM 1" \
-		"Micron" "MT41K256M16" "MT41K256M16TW" "DIMM-0002"
+		"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" "$_sn-DIMM1"
 
 	# -- Power supplies ------------------------------------------------
 	publish_item "$SYS/powersupply0" \
 		"xyz.openbmc_project.Inventory.Item.PowerSupply" \
 		"Power Supply 0" \
-		"NXP" "PSU-12V-65W" "PSU-65W-A0" "PSU-0001"
+		"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" "$_sn-PSU0"
 
 	publish_item "$SYS/powersupply1" \
 		"xyz.openbmc_project.Inventory.Item.PowerSupply" \
 		"Power Supply 1" \
-		"NXP" "PSU-12V-65W" "PSU-65W-A0" "PSU-0002"
+		"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" "$_sn-PSU1"
 
 	# -- Fans ----------------------------------------------------------
 	# The fan tach readings themselves come from the FPGA mailbox via
@@ -139,10 +223,13 @@ publish_all() {
 		publish_item "$SYS/fan$i" \
 			"xyz.openbmc_project.Inventory.Item.Fan" \
 			"Fan $i" \
-			"NXP" "FAN-40MM" "FAN-40-A0" "FAN-000$i"
+			"$HOST_MANUFACTURER" "$HOST_MODEL" "$HOST_PART" \
+			"$_sn-FAN$i"
 	done
 
 	# -- FPGA assembly -------------------------------------------------
+	# The management controller itself, not part of the host FRU record,
+	# so its identity is genuinely local to this board.
 	publish_item "$SYS/motherboard/fpga0" \
 		"xyz.openbmc_project.Inventory.Item.Board" \
 		"FPGA Mailbox Assembly" \
@@ -169,7 +256,8 @@ wait_for_inventory_manager() {
 
 main() {
 	wait_for_inventory_manager || exit 1
-	log_info "publishing simulated host FRU inventory"
+	load_host_fru
+	log_info "publishing host FRU inventory"
 	publish_all
 	log_info "done"
 }

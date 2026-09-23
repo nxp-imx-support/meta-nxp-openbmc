@@ -3,20 +3,6 @@
         "Name": "NXP iMX91FRDM_BMC System",
         "Probe": "TRUE",
         "Type": "System",
-        "xyz.openbmc_project.Inventory.Decorator.Asset": {
-            "Manufacturer": "NXP",
-            "Model": "iMX91FRDM-BMC",
-            "PartNumber": "PN-00112233",
-            "SerialNumber": "ABC123456789",
-            "SparePartNumber": "SPN-00112233",
-            "BuildDate": "2026-01-01 - 00:00:00"
-        },
-        "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
-            "AssetTag": "imx91frdm-bmc-lab"
-        },
-        "xyz.openbmc_project.Inventory.Decorator.Revision": {
-            "Version": "A0"
-        },
         "Exposes": [
             {
                 "Name": "iMX91 Application Processor",

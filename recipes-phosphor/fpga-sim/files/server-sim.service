@@ -1,0 +1,42 @@
+[Unit]
+Description=Managed-server simulator for the FPGA mailbox (server_sim)
+Documentation=file:///usr/share/doc/server_sim/FPGA_SIM_USER_GUIDE.md
+
+# The relay character device only exists once imx9-qspi-mailbox has probed, and
+# the D-Bus consumers must be reachable for the event/POST/inventory surfaces to
+# land. None of these are hard requirements - server_sim retries the bus and
+# reports a clear error if the relay device is absent - so they are ordering
+# hints (After=) plus soft wants, not Requires=. A missing consumer must not
+# keep the simulator from serving the mailbox.
+After=dbus.service
+After=xyz.openbmc_project.Logging.service
+After=xyz.openbmc_project.Inventory.Manager.service
+Wants=xyz.openbmc_project.Logging.service
+Wants=xyz.openbmc_project.Inventory.Manager.service
+
+[Service]
+Type=simple
+
+# -F points at the live-editable alarm file. Editing it re-arms the simulated
+# threshold alarm without restarting the daemon, which is how the alert path is
+# exercised on the bench:
+#
+#   echo "21 1 30 90 1 1" > /var/run/fpga_sim_alarm.txt
+#     sensor 21 (FPGA die temp), trigger every 1s, hold 30s, spike to 90 C,
+#     THRESHOLD alert, MAX violation
+#   echo "21 0" > /var/run/fpga_sim_alarm.txt      disarm
+#
+# No -e flag: the PLDM terminus defaults to EID 1, which is what the retired
+# fpga-pldm-mctp unit used, so existing MCTP endpoint configuration still
+# matches.
+ExecStart=/usr/bin/server_sim -F /var/run/fpga_sim_alarm.txt
+
+Restart=always
+RestartSec=5
+
+# The daemon needs the relay device, D-Bus, and AF_MCTP; it does not need to be
+# resilient to its own OOM kill, and a restart is cheap and stateless.
+OOMPolicy=stop
+
+[Install]
+WantedBy=multi-user.target

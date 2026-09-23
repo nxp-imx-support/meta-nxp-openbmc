@@ -23,8 +23,26 @@ PV = "1.0+git${SRCPV}"
 S = "${UNPACKDIR}/${BP}/kernel_driver/imx9-qspi-mailbox"
 
 
-# Select the userspace FPGA simulator relay transport (implies the in-kernel
-# mock as fallback). Matches the driver Makefile default, set explicitly here.
+# Driver configuration.
+#
+# These CONFIG_* symbols come from the driver's OWN Kconfig/Makefile, not from
+# the kernel .config: for an out-of-tree module the kernel never sources that
+# Kconfig, so nothing lands in autoconf.h. Passing them on the make command line
+# is the only way they take effect - the driver Makefile turns each one into a
+# -D on the compiler line. Putting them in a kernel .cfg fragment does nothing
+# (merge_config.sh drops unknown symbols).
+#
+#   _USPACE - relay transport to the userspace FPGA simulator; implies the
+#             in-kernel mock as a fallback when no daemon is connected.
 EXTRA_OEMAKE += "CONFIG_IMX9_QSPI_MB_USPACE=y"
+
+# KCS/IPMI bridge: register the FPGA eSPI KCS register triplet with the kernel
+# KCS BMC framework so /dev/ipmi-kcs<N> appears for phosphor-ipmi-kcs / ipmid.
+#
+# OFF by default, and it has to be, because it cannot currently be satisfied on
+# any i.MX machine. Enabling it unconditionally broke do_compile for every
+# machine with:
+CONFIG_IMX9_QSPI_MB_KCS ?= "n"
+EXTRA_OEMAKE += "CONFIG_IMX9_QSPI_MB_KCS=${CONFIG_IMX9_QSPI_MB_KCS}"
 
 RPROVIDES:${PN} += "kernel-module-imx9-qspi-mailbox"
