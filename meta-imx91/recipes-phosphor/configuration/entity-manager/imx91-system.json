@@ -1,14 +1,97 @@
-{
-    "Exposes": [
-        {
-            "Name": "System",
-            "Type": "xyz.openbmc_project.Inventory.Item.System",
-            "Properties": {
+[
+    {
+        "Name": "NXP iMX91FRDM_BMC System",
+        "Probe": "TRUE",
+        "Type": "System",
+        "xyz.openbmc_project.Inventory.Decorator.Asset": {
+            "Manufacturer": "NXP",
+            "Model": "iMX91FRDM-BMC",
+            "PartNumber": "PN-00112233",
+            "SerialNumber": "ABC123456789",
+            "SparePartNumber": "SPN-00112233",
+            "BuildDate": "2026-01-01 - 00:00:00"
+        },
+        "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
+            "AssetTag": "imx91frdm-bmc-lab"
+        },
+        "xyz.openbmc_project.Inventory.Decorator.Revision": {
+            "Version": "A0"
+        },
+        "Exposes": [
+            {
+                "Name": "iMX91 Application Processor",
+                "Type": "Processor",
+                "ProcessorType": "CPU",
+                "ProcessorArchitecture": "ARM",
+                "InstructionSet": "ARM-A64",
                 "Manufacturer": "NXP",
-                "Model": "iMX91EVK",
-                "SerialNumber": "ABC123456789",
-                "PartNumber": "PN-00112233"
+                "Model": "i.MX 91 Cortex-A55",
+                "MaxSpeedMHz": 1400,
+                "TotalCores": 1,
+                "TotalThreads": 1,
+                "SerialNumber": "CPU-0001",
+                "PartNumber": "MIMX9131",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "DIMM 0",
+                "Type": "DimmSlot",
+                "MemoryType": "DRAM",
+                "MemoryDeviceType": "DDR4",
+                "CapacityMiB": 2048,
+                "OperatingSpeedMhz": 1600,
+                "DataWidthBits": 32,
+                "Manufacturer": "Micron",
+                "Model": "MT41K256M16",
+                "SerialNumber": "DIMM-0001",
+                "PartNumber": "MT41K256M16TW",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "DIMM 1",
+                "Type": "DimmSlot",
+                "MemoryType": "DRAM",
+                "MemoryDeviceType": "DDR4",
+                "CapacityMiB": 2048,
+                "OperatingSpeedMhz": 1600,
+                "DataWidthBits": 32,
+                "Manufacturer": "Micron",
+                "Model": "MT41K256M16",
+                "SerialNumber": "DIMM-0002",
+                "PartNumber": "MT41K256M16TW",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "Power Supply 0",
+                "Type": "PowerSupply",
+                "Manufacturer": "NXP",
+                "Model": "PSU-12V-65W",
+                "SerialNumber": "PSU-0001",
+                "PartNumber": "PSU-65W-A0",
+                "EfficiencyPercent": 92,
+                "PowerSupplyType": "DC",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "Power Supply 1",
+                "Type": "PowerSupply",
+                "Manufacturer": "NXP",
+                "Model": "PSU-12V-65W",
+                "SerialNumber": "PSU-0002",
+                "PartNumber": "PSU-65W-A0",
+                "EfficiencyPercent": 92,
+                "PowerSupplyType": "DC",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "FPGA Mailbox Assembly",
+                "Type": "Board",
+                "Manufacturer": "Lattice",
+                "Model": "MachXO5-T",
+                "SerialNumber": "FPGA-0001",
+                "PartNumber": "LFMXO5-25-7BG256I",
+                "Status": "Enabled"
             }
-        }
-    ]
- }
+        ]
+    }
+]

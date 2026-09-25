@@ -1,0 +1,19 @@
+[Unit]
+Description=Publish simulated host FRU inventory for Redfish and the WebUI
+# phosphor-inventory-manager owns xyz.openbmc_project.Inventory.Manager and
+# creates the objects this bridge asks for via Notify, so it must be up first.
+# The bridge also polls for the bus name itself, so a slow start is not fatal.
+Wants=xyz.openbmc_project.Inventory.Manager.service
+After=xyz.openbmc_project.Inventory.Manager.service
+
+[Service]
+# One-shot: the FRU set is static simulation data, so it is published once at
+# boot and then the objects persist for the lifetime of
+# phosphor-inventory-manager. RemainAfterExit keeps the unit shown as active
+# so it is obvious the publish step ran.
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/fpga_inventory_bridge.sh
+
+[Install]
+WantedBy=multi-user.target
