@@ -1,0 +1,27 @@
+[Unit]
+Description=NXP graceful restart host%i
+# Serves obmc-host-warm-reboot@%i.target - OpenBMC's GRACEFUL warm reboot.
+#
+# This unit is the missing piece behind the "Graceful Restart performs a force
+# restart instead" failure. Previously nothing served the graceful target
+# directly; instead the recipe linked obmc-host-force-warm-reboot@%i.target
+# into obmc-host-warm-reboot@%i.target.requires, so asking for a graceful
+# restart pulled in the force target and ran the force path. The graceful
+# request had no implementation of its own at all.
+Wants=phosphor-reboot-host@%i.service
+Conflicts=obmc-chassis-poweroff@%i.target
+# If the graceful attempt fails outright, fall back to the force reset target
+# rather than leaving the host in an indeterminate state.
+OnFailure=obmc-host-force-warm-reboot@%i.target
+
+[Service]
+RemainAfterExit=no
+Type=oneshot
+ExecStart=/usr/sbin/host_reboot.sh graceful
+# Must cover GRACEFUL_TIMEOUT (60s) plus the force-reset escalation and the
+# subsequent wait for the host to come back (RESET_TIMEOUT, 90s).
+TimeoutStartSec=200
+SyslogIdentifier=nxp-host-graceful-reset
+
+[Install]
+WantedBy=obmc-host-warm-reboot@%i.target

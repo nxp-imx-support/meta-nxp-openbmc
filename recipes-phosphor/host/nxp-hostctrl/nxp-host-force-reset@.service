@@ -1,5 +1,8 @@
 [Unit]
 Description=NXP force reset host%i
+# Serves obmc-host-force-warm-reboot@%i.target only. The graceful warm-reboot
+# target is served by nxp-host-graceful-reset@.service; the recipe no longer
+# links this target into the graceful one.
 Wants=phosphor-reboot-host@%i.service
 Conflicts=obmc-chassis-poweroff@%i.target
 OnFailure=obmc-chassis-powerreset@%i.target
@@ -7,8 +10,14 @@ OnFailure=obmc-chassis-powerreset@%i.target
 [Service]
 RemainAfterExit=no
 Type=oneshot
-ExecStart=/bin/sh -c "sleep 3 && /usr/bin/env host_reboot.sh"
-SyslogIdentifier=host_reboot.sh
+# The previous "sleep 3 &&" prefix existed to let the requesting D-Bus call
+# return before the host dropped. That is no longer needed: the script now
+# publishes TransitioningToOff before touching the host, so the caller sees the
+# transition start immediately and does not need the host to linger.
+ExecStart=/usr/sbin/host_reboot.sh force
+# Covers the reset pulse plus RESET_TIMEOUT (90s) waiting for the host back.
+TimeoutStartSec=140
+SyslogIdentifier=nxp-host-force-reset
 
 [Install]
 WantedBy=obmc-host-force-warm-reboot@%i.target

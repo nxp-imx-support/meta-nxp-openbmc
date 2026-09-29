@@ -1,0 +1,17 @@
+[Unit]
+Description=NXP force power off host%i
+# Wired into obmc-chassis-poweroff@%i.target, OpenBMC's immediate/force power
+# off path. Previously no unit served this separately: both the graceful and
+# the force request ran the same immediate GPIO drop, so the two were
+# indistinguishable and neither reported completion correctly.
+Conflicts=obmc-host-start@%i.target
+
+[Service]
+RemainAfterExit=no
+Type=oneshot
+ExecStart=/usr/sbin/poweroff.sh force
+TimeoutStartSec=45
+SyslogIdentifier=nxp-host-force-poweroff
+
+[Install]
+WantedBy=obmc-chassis-poweroff@%i.target

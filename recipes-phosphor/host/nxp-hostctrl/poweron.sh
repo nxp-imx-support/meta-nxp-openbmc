@@ -1,17 +1,16 @@
 #!/bin/bash
-#SPDX-License-Identifier: MIT
-#Copyright 2025-2026 NXP
+# SPDX-License-Identifier: MIT
+# Copyright 2025-2026 NXP
+#
+# poweron.sh - power the host on
+#
+# Releases the host from reset / S5 and reports Running only once the host is
+# actually observed to be up (or the wait times out). The previous version
+# asserted "Running" a second after toggling the GPIO regardless of whether the
+# host had come up.
 
-power_on() {
-    echo "Powering on Server"
+. /usr/sbin/nxp_host_power.sh
 
-sleep 1
-gpioset 0 2=1
-sleep 1
-busctl set-property xyz.openbmc_project.State.Host /xyz/openbmc_project/state/host0 xyz.openbmc_project.State.Host CurrentHostState s "xyz.openbmc_project.State.Host.HostState.Running"
-sleep 1
-}
+host_power_on
 
-power_on
-
-exit 0;
+exit 0

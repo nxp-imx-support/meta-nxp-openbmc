@@ -1,28 +1,35 @@
 #!/bin/bash
-#SPDX-License-Identifier: MIT
-#Copyright 2025-2026 NXP
+# SPDX-License-Identifier: MIT
+# Copyright 2025-2026 NXP
+#
+# host_reboot.sh - restart the host
+#
+# Usage: host_reboot.sh [graceful|force]
+#   graceful (default) - ask the host firmware to restart itself over the ACPI
+#                        reset-warning sideband, wait for it to come back, and
+#                        escalate to a force reset only on timeout.
+#   force              - reset the host immediately, no negotiation.
+#
+# This is a WARM reboot in both modes: the host is reset but chassis power is
+# not dropped. The previous version called power_off followed by power_on, i.e.
+# a full cold power cycle, which is not what either warm-reboot target asks
+# for - and it made "Graceful Restart" indistinguishable from a force restart.
 
-power_on() {
-    echo "Powering on Server"
+. /usr/sbin/nxp_host_power.sh
 
-sleep 1
-gpioset 0 2=1
-sleep 1
-busctl set-property xyz.openbmc_project.State.Host /xyz/openbmc_project/state/host0 xyz.openbmc_project.State.Host CurrentHostState s "xyz.openbmc_project.State.Host.HostState.Running"
-sleep 1
-}
+MODE="${1:-graceful}"
 
-power_off() {
-    echo "Powering off Server"
+case "$MODE" in
+graceful)
+	host_reset_graceful
+	;;
+force)
+	host_reset_force
+	;;
+*)
+	echo "usage: $0 [graceful|force]" >&2
+	exit 1
+	;;
+esac
 
-    gpioset 0 2=0
-    sleep 1
-
-  #  busctl set-property xyz.openbmc_project.State.Chassis /xyz/openbmc_project/state/chassis0 xyz.openbmc_project.State.Chassis RequestedPowerTransition s xyz.openbmc_project.State.Chassis.Transition.Off
-
-}
-
-power_off
-power_on
-
-exit 0;
+exit 0

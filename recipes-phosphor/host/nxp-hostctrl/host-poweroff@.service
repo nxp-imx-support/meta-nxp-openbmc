@@ -1,11 +1,19 @@
 [Unit]
-Description=Stop Host
+Description=Graceful Shutdown of Host%i
+# Wired into obmc-host-shutdown@%i.target, which is OpenBMC's GRACEFUL host
+# shutdown target. The force path is obmc-chassis-poweroff@%i.target and is
+# served by nxp-host-force-poweroff@.service, so this unit must ask nicely
+# rather than dropping the host outright.
 
 [Service]
 RemainAfterExit=yes
 Type=oneshot
-ExecStart=/usr/bin/env poweroff.sh
-SyslogIdentifier=poweroff.sh
+ExecStart=/usr/sbin/poweroff.sh graceful
+# Must exceed GRACEFUL_TIMEOUT (60s) plus the force-off escalation window so
+# systemd does not kill the script part-way through the escalation and leave
+# CurrentHostState stuck on TransitioningToOff.
+TimeoutStartSec=120
+SyslogIdentifier=nxp-host-poweroff
 
 [Install]
 WantedBy=multi-user.target
