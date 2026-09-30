@@ -1,0 +1,20 @@
+uuu_version 1.5.233
+
+# Boot the imx943-am board into U-Boot via USB Serial Download Protocol
+SDP: boot -f imx-boot-evb-imx943-am-xspi.bin-flash_a55_xspi
+
+# i.MX943 stream mode path
+SDPS: boot -f imx-boot-evb-imx943-am-xspi.bin-flash_a55_xspi -skipfhdr
+
+# SPL SDPV path -- skipped unless device enumerates as SDPV
+SDPV: delay 1000
+SDPV: write -f imx-boot-evb-imx943-am-xspi.bin-flash_a55_xspi -skipspl -skipfhdr
+SDPV: jump
+
+# --- U-Boot fastboot: raw NOR write ---
+FB: ucmd sf probe
+FB: ucmd setenv fastboot_buffer ${loadaddr}
+FB[-t 300000]: download -f obmc-phosphor-image-evb-imx943-am.norflash
+FB[-t 300000]: ucmd sf erase 0x0 +0x${fastboot_bytes}
+FB[-t 300000]: ucmd sf write ${fastboot_buffer} 0x0 0x${fastboot_bytes}
+FB: done

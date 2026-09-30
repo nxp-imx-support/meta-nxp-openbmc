@@ -29,3 +29,46 @@ BB_DISKMON_DIRS ??= "\
     HALT,${SSTATE_DIR},100M,1K \
     HALT,/tmp,10M,1K"
 CONF_VERSION = "2"
+
+UBOOT_CONFIG = "fspi"
+
+# Changes for reducing rootfs.
+
+# Remove unwanted packages
+IMAGE_INSTALL:remove = "git python3 perl"
+
+# Remove debug features
+IMAGE_FEATURES:remove = "dbg-pkgs package-management"
+EXTRA_IMAGE_FEATURES:remove = "dbg-pkgs"
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+
+# Disable package manager
+EXTRA_IMAGE_FEATURES:remove = "package-management"
+
+# No locales
+IMAGE_LINGUAS = ""
+
+# Avoid recommended packages
+#BAD_RECOMMENDATIONS += " *-locale-* *-doc"
+NO_RECOMMENDATIONS = "1"
+
+# Kernel deps cleanup
+RDEPENDS:${KERNEL_PACKAGE_NAME}-base = ""
+
+# Strip settings
+INHIBIT_PACKAGE_STRIP = "0"
+INHIBIT_SYSROOT_STRIP = "0"
+
+KERNEL_IMAGETYPE = "uImage"
+KERNEL_IMAGETYPES += " Image.gz"
+
+IMAGE_INSTALL:append = " systemd-networkd"
+IMAGE_INSTALL:append = " kernel-module-stream2v4l2"
+
+DISTRO_FEATURES:append = " usrmerge"
+
+IMAGE_FSTYPES:append = " jffs2"
+FLASH_SIZE = "131072"
+FLASH_ROOTFS_TYPE = "jffs2"
+JFFS2_ENDIANNESS = "-l"
+JFFS2_ERASEBLOCK = "0x20000"

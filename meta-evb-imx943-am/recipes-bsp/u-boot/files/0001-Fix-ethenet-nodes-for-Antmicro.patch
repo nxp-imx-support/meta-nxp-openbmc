@@ -1,0 +1,49 @@
+From 1fe23fa3e805f852824c4e1b424b3c5ccc743edb Mon Sep 17 00:00:00 2001
+From: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+Date: Thu, 17 Sep 2026 10:47:05 +0530
+Subject: [PATCH] Fix ethenet nodes for Antmicro
+
+Upstream-Status: Pending
+Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+---
+ arch/arm/dts/imx943-dc-scm.dts | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/dts/imx943-dc-scm.dts b/arch/arm/dts/imx943-dc-scm.dts
+index 4ecd46d57ea..1589a4538a2 100644
+--- a/arch/arm/dts/imx943-dc-scm.dts
++++ b/arch/arm/dts/imx943-dc-scm.dts
+@@ -396,10 +396,10 @@
+ 
+ &enetc0 {
+ 	clocks = <&scmi_clk IMX94_CLK_MAC3>;
+-	clock-names = "enet_ref_clk";
++	clock-names = "ref";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_eth2>;
+-	phy-handle = <&ethphy4>;
++	phy-handle = <&ethphy2>;
+ 	phy-mode = "rgmii-id";
+ 	status = "okay";
+ };
+@@ -410,7 +410,7 @@
+ 	phy-supply = <&reg_gpy_en>;
+ 	status = "okay";
+ 
+-	ethphy4: ethernet-phy@5 {
++	ethphy2: ethernet-phy@5 {
+ 		reg = <0x5>;
+ 		realtek,clkout-disable;
+ 	};
+@@ -606,7 +606,7 @@
+ 		>;
+ 	};
+ 
+-	pinctrl_eth2: eth4grp {
++	pinctrl_eth2: eth2grp {
+ 		fsl,pins = <
+ 			IMX94_PAD_ETH2_TXD3__NETC_PINMUX_ETH2_TXD3		0x57e
+ 			IMX94_PAD_ETH2_TXD2__NETC_PINMUX_ETH2_TXD2		0x57e
+-- 
+2.43.0
+
