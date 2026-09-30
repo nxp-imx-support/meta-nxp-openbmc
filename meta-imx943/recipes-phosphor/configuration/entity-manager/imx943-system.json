@@ -1,14 +1,83 @@
-{
-    "Exposes": [
-        {
-            "Name": "System",
-            "Type": "xyz.openbmc_project.Inventory.Item.System",
-            "Properties": {
+[
+    {
+        "Name": "NXP iMX943EVK_BMC System",
+        "Probe": "TRUE",
+        "Type": "System",
+        "Exposes": [
+            {
+                "Name": "iMX943 Application Processor",
+                "Type": "Processor",
+                "ProcessorType": "CPU",
+                "ProcessorArchitecture": "ARM",
+                "InstructionSet": "ARM-A64",
                 "Manufacturer": "NXP",
-                "Model": "iMX943EVK",
-                "SerialNumber": "ABC123456789",
-                "PartNumber": "PN-00112233"
+                "Model": "i.MX 943 Cortex-A55",
+                "MaxSpeedMHz": 2000,
+                "TotalCores": 4,
+                "TotalThreads": 4,
+                "SerialNumber": "CPU-0001",
+                "PartNumber": "MIMX94398",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "DIMM 0",
+                "Type": "DimmSlot",
+                "MemoryType": "DRAM",
+                "MemoryDeviceType": "LPDDR4",
+                "CapacityMiB": 4096,
+                "OperatingSpeedMhz": 2133,
+                "DataWidthBits": 32,
+                "Manufacturer": "Micron",
+                "Model": "MT53E1G32D2",
+                "SerialNumber": "DIMM-0001",
+                "PartNumber": "MT53E1G32D2NP",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "DIMM 1",
+                "Type": "DimmSlot",
+                "MemoryType": "DRAM",
+                "MemoryDeviceType": "LPDDR4",
+                "CapacityMiB": 4096,
+                "OperatingSpeedMhz": 2133,
+                "DataWidthBits": 32,
+                "Manufacturer": "Micron",
+                "Model": "MT53E1G32D2",
+                "SerialNumber": "DIMM-0002",
+                "PartNumber": "MT53E1G32D2NP",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "Power Supply 0",
+                "Type": "PowerSupply",
+                "Manufacturer": "NXP",
+                "Model": "PSU-12V-65W",
+                "SerialNumber": "PSU-0001",
+                "PartNumber": "PSU-65W-A0",
+                "EfficiencyPercent": 92,
+                "PowerSupplyType": "DC",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "Power Supply 1",
+                "Type": "PowerSupply",
+                "Manufacturer": "NXP",
+                "Model": "PSU-12V-65W",
+                "SerialNumber": "PSU-0002",
+                "PartNumber": "PSU-65W-A0",
+                "EfficiencyPercent": 92,
+                "PowerSupplyType": "DC",
+                "Status": "Enabled"
+            },
+            {
+                "Name": "FPGA Mailbox Assembly",
+                "Type": "Board",
+                "Manufacturer": "Lattice",
+                "Model": "MachXO5-T",
+                "SerialNumber": "FPGA-0001",
+                "PartNumber": "LFMXO5-25-7BG256I",
+                "Status": "Enabled"
             }
-        }
-    ]
- }
+        ]
+    }
+]
