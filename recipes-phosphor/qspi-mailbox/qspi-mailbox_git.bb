@@ -45,4 +45,4 @@ EXTRA_OEMAKE += "CONFIG_IMX9_QSPI_MB_USPACE=y"
 CONFIG_IMX9_QSPI_MB_KCS ?= "n"
 EXTRA_OEMAKE += "CONFIG_IMX9_QSPI_MB_KCS=${CONFIG_IMX9_QSPI_MB_KCS}"
 
-RPROVIDES:${PN} += "kernel-module-imx9-qspi-mailbox"
+RPROVIDES:${PN}:append = "${@'' if d.getVar('MACHINE') in ['latu-dcsm-imx95', 'evb-imx95'] else ' kernel-module-imx9-qspi-mailbox'}"

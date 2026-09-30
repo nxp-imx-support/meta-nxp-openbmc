@@ -1,0 +1,79 @@
+# NXP imx95 LATU-DCSM example local.conf settings
+# This file is a convenience template and may be freely modified by the user
+
+MACHINE ??= "latu-dcsm-imx95"
+DISTRO ?= "openbmc-phosphor"
+PACKAGE_CLASSES ?= "package_ipk"
+SANITY_TESTED_DISTROS:append ?= " *"
+EXTRA_IMAGE_FEATURES ?= "allow-root-login"
+IMAGE_INSTALL:append = " net-tools curl lmsensors phosphor-hwmon openipmi ipmitool dbus-sensors socat entity-manager"
+IMX_MIRROR ?= "https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/"
+
+
+# NXP Yocto mirror for source archives
+MIRRORS += " \
+${IMX_MIRROR}   http://download.ossystems.com.br/bsp/freescale/source/ \n \
+"
+FSL_MIRROR ?= "${IMX_MIRROR}"
+
+ACCEPT_FSL_EULA = "1"
+USER_CLASSES ?= "buildstats"
+PATCHRESOLVE = "noop"
+BB_DISKMON_DIRS ??= "\
+    STOPTASKS,${TMPDIR},1G,100K \
+    STOPTASKS,${DL_DIR},1G,100K \
+    STOPTASKS,${SSTATE_DIR},1G,100K \
+    STOPTASKS,/tmp,100M,100K \
+    HALT,${TMPDIR},100M,1K \
+    HALT,${DL_DIR},100M,1K \
+    HALT,${SSTATE_DIR},100M,1K \
+    HALT,/tmp,10M,1K"
+CONF_VERSION = "2"
+
+UBOOT_CONFIG = "fspi"
+
+# Changes for reducing rootfs.
+
+# Remove unwanted packages
+IMAGE_INSTALL:remove = "git python3 perl"
+
+# Remove debug features
+IMAGE_FEATURES:remove = "dbg-pkgs package-management"
+EXTRA_IMAGE_FEATURES:remove = "dbg-pkgs"
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+
+# Disable package manager
+EXTRA_IMAGE_FEATURES:remove = "package-management"
+
+# No locales
+IMAGE_LINGUAS = ""
+
+# Avoid recommended packages
+#BAD_RECOMMENDATIONS += " *-locale-* *-doc"
+NO_RECOMMENDATIONS = "1"
+
+# Kernel deps cleanup
+RDEPENDS:${KERNEL_PACKAGE_NAME}-base = ""
+
+# Strip settings
+INHIBIT_PACKAGE_STRIP = "0"
+INHIBIT_SYSROOT_STRIP = "0"
+
+KERNEL_IMAGETYPE = "uImage"
+KERNEL_IMAGETYPES += " Image.gz"
+
+IMAGE_INSTALL:append = " systemd-networkd"
+IMAGE_INSTALL:append = " kernel-module-stream2v4l2"
+
+IMAGE_FSTYPES:append = " jffs2"
+FLASH_SIZE = "131072"
+FLASH_ROOTFS_TYPE = "jffs2"
+JFFS2_ENDIANNESS = "-l"
+JFFS2_ERASEBLOCK = "0x10000"
+
+# ---------------------------------------------------------------------------
+# LATU DC-SCM source selection for u-boot / imx-system-manager / imx-mkimage
+#   "1" = use LATU custom NXP-internal (bitbucket.sw.nxp.com) sources and branches
+#   "0" = use upstream defaults from meta-imx-bsp (github.com/nxp-imx)
+# ---------------------------------------------------------------------------
+LATU_USE_CUSTOM_SRC ?= "1"

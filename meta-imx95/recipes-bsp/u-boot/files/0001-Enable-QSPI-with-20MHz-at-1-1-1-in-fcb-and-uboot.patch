@@ -1,0 +1,197 @@
+From e64628524aefb78e643479be0b0d85b322244e88 Mon Sep 17 00:00:00 2001
+From: Arpit Goel <arpit.goel_2@nxp.com>
+Date: Wed, 23 Sep 2026 15:46:51 +0530
+Subject: [PATCH 1/2] Enable QSPI with 20MHz at 1-1-1 in fcb and uboot
+
+Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+---
+ ...ash-clock-30-MHz-with-1-1-1-protocol.patch | 31 +++++++
+ .../u-boot/files/fspi/defconfig-fragment.cfg  |  2 +
+ ...er-with-30Mhz-clock-and-1-1-1-protco.patch | 91 +++++++++++++++++++
+ .../imx-mkimage/imx-boot_1.0.bbappend         |  5 +
+ .../recipes-bsp/u-boot/u-boot-imx_%.bbappend  |  1 +
+ 5 files changed, 130 insertions(+)
+ create mode 100644 meta-imx95/recipes-bsp/u-boot/files/0001-Update-the-flash-clock-30-MHz-with-1-1-1-protocol.patch
+ create mode 100644 meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/files/0001-Modify-fspi-header-with-30Mhz-clock-and-1-1-1-protco.patch
+
+diff --git a/meta-imx95/recipes-bsp/u-boot/files/0001-Update-the-flash-clock-30-MHz-with-1-1-1-protocol.patch b/meta-imx95/recipes-bsp/u-boot/files/0001-Update-the-flash-clock-30-MHz-with-1-1-1-protocol.patch
+new file mode 100644
+index 0000000..3c1a55e
+--- /dev/null
++++ b/meta-imx95/recipes-bsp/u-boot/files/0001-Update-the-flash-clock-30-MHz-with-1-1-1-protocol.patch
+@@ -0,0 +1,31 @@
++From ae9e5714cd2e18eb648a82c7833eb51d6c24a350 Mon Sep 17 00:00:00 2001
++From: Nikhil Gupta <nikhil.gupta_2@nxp.com>
++Date: Wed, 23 Sep 2026 14:29:04 +0530
++Subject: [PATCH] Update the flash clock 30 MHz with 1-1-1 protocol
++
++Upstream-Status: Pending
++Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
++---
++ dts/upstream/src/arm64/freescale/imx95-19x19-evk.dts | 6 +++---
++ 1 file changed, 3 insertions(+), 3 deletions(-)
++
++diff --git a/dts/upstream/src/arm64/freescale/imx95-19x19-evk.dts b/dts/upstream/src/arm64/freescale/imx95-19x19-evk.dts
++index 9f968feccef..10b01dd30bc 100644
++--- a/dts/upstream/src/arm64/freescale/imx95-19x19-evk.dts
+++++ b/dts/upstream/src/arm64/freescale/imx95-19x19-evk.dts
++@@ -275,9 +275,9 @@
++ 		reset-gpios = <&gpio5 11 GPIO_ACTIVE_LOW>;
++ 		#address-cells = <1>;
++ 		#size-cells = <1>;
++-		spi-max-frequency = <200000000>;
++-		spi-tx-bus-width = <8>;
++-		spi-rx-bus-width = <8>;
+++		spi-max-frequency = <20000000>;
+++		spi-tx-bus-width = <1>;
+++		spi-rx-bus-width = <1>;
++ 	};
++ };
++
++--
++2.43.0
++
+diff --git a/meta-imx95/recipes-bsp/u-boot/files/fspi/defconfig-fragment.cfg b/meta-imx95/recipes-bsp/u-boot/files/fspi/defconfig-fragment.cfg
+index 386fbfb..ff6e540 100644
+--- a/meta-imx95/recipes-bsp/u-boot/files/fspi/defconfig-fragment.cfg
++++ b/meta-imx95/recipes-bsp/u-boot/files/fspi/defconfig-fragment.cfg
+@@ -13,12 +13,14 @@ CONFIG_SPI_MEM=y
+ CONFIG_NXP_FSPI=y
+ CONFIG_SPI_FLASH=y
+ CONFIG_SPI_FLASH_SFDP_SUPPORT=y
++CONFIG_SPL_SPI_FLASH_SFDP_SUPPORT=n
+ CONFIG_SPI_FLASH_MACRONIX=y
+ CONFIG_SPI_FLASH_MICRON=y
+ CONFIG_SPI_FLASH_SPANSION=y
+ CONFIG_SPI_FLASH_STMICRO=y
+ CONFIG_SPI_FLASH_WINBOND=y
+ CONFIG_SPI_FLASH_MTD=y
++CONFIG_SF_DEFAULT_SPEED=20000000
+
+ # Store U-Boot environment in SPI NOR flash
+ # Offset 0x3F0000 places env just before the 4 MB boundary,
+diff --git a/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/files/0001-Modify-fspi-header-with-30Mhz-clock-and-1-1-1-protco.patch b/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/files/0001-Modify-fspi-header-with-30Mhz-clock-and-1-1-1-protco.patch
+new file mode 100644
+index 0000000..64adca8
+--- /dev/null
++++ b/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/files/0001-Modify-fspi-header-with-30Mhz-clock-and-1-1-1-protco.patch
+@@ -0,0 +1,91 @@
++From bf532f1b9b429c9e573ff76b5843d09695f1b61f Mon Sep 17 00:00:00 2001
++From: Nikhil Gupta <nikhil.gupta_2@nxp.com>
++Date: Wed, 23 Sep 2026 11:26:11 +0530
++Subject: [PATCH] Modify fspi header with 30Mhz clock and 1-1-1 protcol
++
++Upstream-Status: Pending
++Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
++---
++ iMX95/scripts/fspi_header_133 | 34 +++++++++++++++++-----------------
++ 1 file changed, 17 insertions(+), 17 deletions(-)
++
++diff --git a/iMX95/scripts/fspi_header_133 b/iMX95/scripts/fspi_header_133
++index 675f2f8..6f2135c 100644
++--- a/iMX95/scripts/fspi_header_133
+++++ b/iMX95/scripts/fspi_header_133
++@@ -1,10 +1,10 @@
++ 46434642 /* Tag, ASCII "FCFB" */
++ 00000156 /* Version */
++ 00000000
++-03030300 /* ColumnAddressWidth, DataSetupTime, DataHoldTime, ReadSampleClkSrc */
++-01000000 /* device mode cfg enable 01000000 */
++-01040000 /* cfg use seq cnt 1 idx 4*/
++-e7000000 /* mt35x Volatile Configuration Register 0, octal ddr mode,  0xe7 */
+++00030300 /* ColumnAddressWidth, csSetupTime=0x03, csHoldTime=0x03, ReadSampleClkSrc=0x00 (internal) */
+++00000000 /* deviceModeCfgEnable=0, no mode-switch needed (flash powers up in SPI mode) */
+++00000000 /* deviceModeSeq: not used */
+++00000000 /* deviceModeArg: not used */
++ 00000000
++ 00000000
++ 00000000
++@@ -14,8 +14,8 @@ e7000000 /* mt35x Volatile Configuration Register 0, octal ddr mode,  0xe7 */
++ 00000000
++ 00000000
++ 00000000
++-50000000 /* DDR mode enable use 30M for config   50000000 */
++-01080600 /* Nor, Octal pad, 133MHZ  01080600   */
+++00000000 /* controllerMiscOption: default */
+++00010100 /* deviceType=NOR(0x00), sflashPadType=single(0x01), serialClkFreq=0x01 (30MHz min) */
++ 00000000
++ 00000000
++ 00000010 /* SFlashA1Size */
++@@ -30,26 +30,23 @@ e7000000 /* mt35x Volatile Configuration Register 0, octal ddr mode,  0xe7 */
++ 00000000
++ 00000000
++ 00000000
++-fd87fd87 /* idx0 */
++-208b20b3
++-04a70000
+++03041808 /* seq0 Standard SPI Read 0x03: CMD_SDR 1PAD | RADDR_SDR 1PAD 24-bit */
+++04240000 /* READ_SDR 1PAD 4 bytes | STOP */
++ 00000000
++-05870587 /* idx1 read status */
++-20b300a7
++ 00000000
+++05040124 /* seq1 Read Status 0x05: CMD_SDR 1PAD | READ_SDR 1PAD 1 byte */
++ 00000000
++-00000000 /* idx 2 */
++ 00000000
++ 00000000
+++00000000 /* seq2 empty */
++ 00000000
++-06040000 /* idx 3 write enable */
++ 00000000
++ 00000000
+++06040000 /* seq3 Write Enable 0x06: CMD_SDR 1PAD */
++ 00000000
++-81041808 /* idx4 use 81h write volatile reg of mt35x */
++-01200000
++ 00000000
++ 00000000
+++00000000 /* seq4 empty (no OPI mode-switch) */
++ 00000000
++ 00000000
++ 00000000
++@@ -110,8 +107,11 @@ fd87fd87 /* idx0 */
++ 00000000
++ 00000000
++ 00000000
++-00010000 /* Page Size, not used in ROM */
++-00000100 /* Sector Size, not used in ROM */
+++00000000
+++00000000
+++00000000
+++00000000 /* Page Size, not used in ROM */
+++00000000 /* Sector Size, not used in ROM */
++ 00000000
++ 00000000
++ 00000000
++--
++2.43.0
++
+diff --git a/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/imx-boot_1.0.bbappend b/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/imx-boot_1.0.bbappend
+index 8197051..a3c4d66 100644
+--- a/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/imx-boot_1.0.bbappend
++++ b/meta-latu-dcsm-imx95/recipes-bsp/imx-mkimage/imx-boot_1.0.bbappend
+@@ -10,3 +10,8 @@ SRCBRANCH = "${@'lf-6.18.20_2.0.0' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' els
+ SRCREV    = "${AUTOREV}"
+
+ MKIMAGE_EXTRA_ARGS:append:latu-dcsm-imx95 = "${@ ' QSPI_HEADER=./scripts/fspi_header_MX66U1G45G' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ' QSPI_HEADER=./scripts/fspi_header_133'}"
++
++FILESEXTRAPATHS:prepend := "${THISDIR}/files/:"
++
++SRC_URI:append:latu-dcsm-imx95 = " file://0001-Modify-fspi-header-with-30Mhz-clock-and-1-1-1-protco.patch"
++
+diff --git a/meta-latu-dcsm-imx95/recipes-bsp/u-boot/u-boot-imx_%.bbappend b/meta-latu-dcsm-imx95/recipes-bsp/u-boot/u-boot-imx_%.bbappend
+index f680b2d..98f6884 100644
+--- a/meta-latu-dcsm-imx95/recipes-bsp/u-boot/u-boot-imx_%.bbappend
++++ b/meta-latu-dcsm-imx95/recipes-bsp/u-boot/u-boot-imx_%.bbappend
+@@ -13,6 +13,7 @@ FILESEXTRAPATHS:prepend := "${@'${THISDIR}/files/:' if d.getVar('LATU_USE_CUSTOM
+
+ SRC_URI:append:latu-dcsm-imx95 = "${@' file://defconfig-fragment.cfg' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ' file://fspi/defconfig-fragment.cfg'}"
+ SRC_URI:append:latu-dcsm-imx95 = "${@' file://custom-bmc-env-nor.cmd' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ' file://fspi/custom-bmc-env-nor.cmd'}"
++SRC_URI:append:latu-dcsm-imx95 = "${@'' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ' file://0001-Update-the-flash-clock-30-MHz-with-1-1-1-protocol.patch'}"
+
+ # Use NOR-specific env — overrides meta-imx95's default "custom-bmc-env"
+ UBOOT_ENV:latu-dcsm-imx95 = "custom-bmc-env-nor"
+--
+2.43.0
+

@@ -1,0 +1,20 @@
+uuu_version 1.5.233
+
+#  SKIPPED on i.MX95 (ROM is stream/HID_NO_CMD)
+SDP: boot -f imx-boot-latu-dcsm-imx95-fspi.bin-flash_a55_flexspi
+
+# i.MX95 ROM stream mode -- THIS runs on i.MX95
+SDPS: boot -f imx-boot-latu-dcsm-imx95-fspi.bin-flash_a55_flexspi -skipfhdr
+
+# SPL SDPV path -- skipped unless device enumerates as SDPV
+SDPV: delay 1000
+SDPV: write -f imx-boot-latu-dcsm-imx95-fspi.bin-flash_a55_flexspi -skipspl -skipfhdr
+SDPV: jump
+
+# --- U-Boot fastboot: raw NOR write ---
+FB: ucmd sf probe
+FB: ucmd setenv fastboot_buffer 0x90400000
+FB[-t 300000]: download -f obmc-phosphor-image-latu-dcsm-imx95.norflash
+FB[-t 300000]: ucmd sf erase 0x0 +0x${fastboot_bytes}
+FB[-t 300000]: ucmd sf write ${fastboot_buffer} 0x0 0x${fastboot_bytes}
+FB: done
