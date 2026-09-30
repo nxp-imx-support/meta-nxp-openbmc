@@ -1,0 +1,43 @@
+1. NOR FLASH Partition Layot
+NOR_FLASH_SIZE    = "0x049A0000"
+NOR_OFFSET_BOOT   = "0x00000000"
+NOR_OFFSET_KERNEL = "0x002C0000"
+NOR_OFFSET_DTB    = "0x01200000"
+NOR_OFFSET_ROOTFS = "0x01280000"
+
+
+2. Flash the flash.bin from uuu tool to Nor Flash.
+
+Then flash all components in U-Boot
+
+setenv serverip 10.232.132.230
+setenv ipaddr 10.232.132.240
+ping 10.232.132.230
+
+
+#Load DTB
+tftp 0xA0000000 imx93-11x11-evk-bmc-host-evb-imx93-nor.dtb
+sf probe
+sf erase 0x02400000 0x00080000
+sf write 0xA0000000 0x02400000 ${filesize}
+
+#Load compressed kernel
+tftp 0xA1000000 Image.gz-1-6.18.2+git0+177495c151_machine-r0-evb-imx93-nor-20260902134925.bin
+sf probe
+sf erase 0x002C0000 0x00F00000
+sf write 0xA1000000 0x002C0000 ${filesize}
+
+#Read DTB and compressed kernel:
+sf probe
+sf read 0xA0000000 0x02400000 0x00080000
+sf read 0xA1000000 0x002C0000 0x00E63F0A
+
+#Verify gzip magic:
+md.b 0xA1000000 4 -------------->Expected:1f 8b 08 00
+
+
+#decompress into DDR:
+unzip 0xA1000000 0xB0000000
+
+6. boot:
+booti 0xB0000000 - 0xA0000000

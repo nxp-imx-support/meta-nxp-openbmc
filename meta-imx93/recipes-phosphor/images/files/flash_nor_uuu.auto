@@ -1,0 +1,51 @@
+uuu_version 1.5.233
+
+# i.MX93 EVK NOR flash programming via UUU
+#
+# NOR partition layout:
+#   boot    0x0000000  (2.75 MB)   imx-boot container
+#   kernel  0x02C0000  (15 MB)     Linux kernel Image.gz
+#   dtb     0x11C0000  (512 KB)    device-tree blob
+#   rootfs  0x1240000  (40.75 MB)  JFFS2 root filesystem
+#   total   0x3B00000  (~59 MB)
+
+# SKIPPED on i.MX93 (ROM is stream/HID_NO_CMD)
+SDP: boot -f imx-boot-evb-imx93-nor-fspi.bin-flash_singleboot
+
+# i.MX93 ROM stream mode -- THIS runs on i.MX93
+SDPS: boot -f imx-boot-evb-imx93-nor-fspi.bin-flash_singleboot -skipfhdr
+
+# SPL SDPU path (deprecated, use SDPV)
+SDPU: delay 1000
+SDPU: write -f imx-boot-evb-imx93-nor-fspi.bin-flash_singleboot -offset 0x10000 -skipfhdr
+SDPU: jump
+
+# SPL SDPV path -- skipped unless device enumerates as SDPV
+SDPV: delay 1000
+SDPV: write -f imx-boot-evb-imx93-nor-fspi.bin-flash_singleboot -skipspl -skipfhdr
+SDPV: jump
+
+# --- Step 1: Flash consolidated NOR image (boot + kernel + dtb + rootfs) ---
+# Write the full norflash image first. This raw dd image does NOT contain
+# the FlexSPI Configuration Block (FCFB/QSPI header) that the i.MX93 ROM
+# requires for NOR boot. Step 2 will re-program the boot area with qspihdr.
+FB: ucmd setenv fastboot_buffer ${loadaddr}
+FB[-t 300000]: download -f obmc-phosphor-image-evb-imx93-nor.norflash
+FB: ucmd if test ! -n "$fastboot_bytes"; then setenv fastboot_bytes $filesize; else true; fi
+FB: ucmd sf probe
+FB[-t 600000]: ucmd sf erase 0x0 +0x${fastboot_bytes}
+FB[-t 600000]: ucmd sf write ${fastboot_buffer} 0x0 0x${fastboot_bytes}
+
+# --- Step 2: Re-flash boot container with qspihdr (FCFB) support ---
+# The qspihdr command patches the FlexSPI Configuration Block into the
+# boot area so the i.MX93 ROM can boot from NOR. This MUST run after
+# the norflash image write so the FCFB header is not overwritten.
+FB: ucmd setenv fastboot_buffer ${loadaddr}
+FB: download -f imx-boot-evb-imx93-nor-fspi.bin-flash_singleboot
+FB: ucmd if test ! -n "$fastboot_bytes"; then setenv fastboot_bytes $filesize; else true; fi
+FB: ucmd if qspihdr dump ${fastboot_buffer}; then setenv qspihdr_exist yes; else setenv qspihdr_exist no; fi;
+FB[-t 60000]: ucmd if test ${qspihdr_exist} = yes; then qspihdr init ${fastboot_buffer} ${fastboot_bytes} safe; else true; fi;
+FB: ucmd if test ${qspihdr_exist} = no; then sf probe; else true; fi;
+FB[-t 40000]: ucmd if test ${qspihdr_exist} = no; then sf erase 0 +0x${fastboot_bytes}; else true; fi;
+FB[-t 20000]: ucmd if test ${qspihdr_exist} = no; then sf write ${fastboot_buffer} 0 0x${fastboot_bytes}; else true; fi;
+FB: done
