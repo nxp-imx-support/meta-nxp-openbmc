@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 
 # Integration branch carrying the consolidated simulator (PR#4). Revert the
 # branch to "main" once that merges; the recipe needs no other change.
-SRC_URI = "git://git@bitbucket.sw.nxp.com/isp/bmc_mailbox.git;protocol=ssh;branch=integration/latu-dcm-plus-pr2 \
+SRC_URI = "git://git@bitbucket.sw.nxp.com/isp/bmc_mailbox.git;protocol=ssh;branch=wrynose \
            file://mock-server.service \
 "
 SRCREV = "${AUTOREV}"
