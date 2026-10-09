@@ -69,6 +69,18 @@ IMAGE_FEATURES:remove:evb-imx93-nor = "ssh-server-openssh"
 IMAGE_FEATURES:append:evb-imx93-nor = " ssh-server-dropbear"
 
 # ===================================================================
+# Network backend: systemd-networkd REQUIRED by phosphor-network
+# ===================================================================
+# phosphor-network-manager uses systemd-networkd as its backend to apply
+# interface config and run DHCP.  The size-reduced NOR manifest does not
+# pull it in automatically, so install it explicitly - without networkd
+# no interface gets an IP at boot (phosphor-network has no backend to
+# apply the DHCP lease).  Note: systemd-resolved is not a standalone
+# package in this systemd build (it is enabled via PACKAGECONFIG), so it
+# is not listed here.
+IMAGE_INSTALL:append:evb-imx93-nor = " systemd-networkd"
+
+# ===================================================================
 # Compiler optimization: -Os (optimize for size)
 # ===================================================================
 # Switch from the default -O2 to -Os for all target recipes.
