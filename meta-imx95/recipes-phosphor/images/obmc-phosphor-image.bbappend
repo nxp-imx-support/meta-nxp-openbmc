@@ -1,5 +1,5 @@
 IMAGE_INSTALL:append = " nxp-pci-gop"
-IMAGE_INSTALL:append = " ${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', 'fpga-sim qspi-mailbox obmf-driver obmf-bmc-apps', '', d)}"
+IMAGE_INSTALL:append = " ${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', 'mock-server obmf-driver obmf-bmc-apps', '', d)}"
 IMAGE_INSTALL:append = " dpu-drm-app"
 
 # NOR flash image type for evb-imx95-evk-nor machine
