@@ -15,11 +15,11 @@ LICENSE = "GPL-2.0-only"
 
 inherit module
 
-# Top of tree of the main branch.
-#SRC_URI = "git://git@bitbucket.sw.nxp.com/~nxa15309/ioe_obmf_linux.git;protocol=ssh;branch=main"
-SRC_URI = "git://git@bitbucket.sw.nxp.com/sbs/ioe_obmf_linux.git;protocol=ssh;branch=main"
-#SRCREV = "${AUTOREV}"
-SRCREV = "83d2428d36e27347c4cfd99d64edc611a17e9d3e"
+# OBMF source is centralized in conf/machine/include/nxp.inc
+# (OBMF_SRC/_BRANCH/_SRCREV). Internal-only component (this recipe is installed
+# only when BMC_LINUX_USE_INTERNAL=1).
+SRC_URI = "${OBMF_SRC};branch=${OBMF_BRANCH}"
+SRCREV = "${OBMF_SRCREV}"
 PV = "1.0+git${SRCPV}"
 
 # The module lives in the bmc_obmf_driver kbuild subdirectory of the repo.

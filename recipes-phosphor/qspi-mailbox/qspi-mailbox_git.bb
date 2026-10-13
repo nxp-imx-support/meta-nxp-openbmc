@@ -8,9 +8,11 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 
 inherit module
 
-# Top of tree of the main branch.
-SRC_URI = "git://git@bitbucket.sw.nxp.com/isp/bmc_mailbox.git;protocol=ssh;branch=wrynose"
-SRCREV = "${AUTOREV}"
+# bmc_mailbox source is centralized in conf/machine/include/nxp.inc
+# (BMC_MAILBOX_SRC/_BRANCH/_SRCREV): Bitbucket for internal builds, public
+# GitHub for external.
+SRC_URI = "${BMC_MAILBOX_SRC};branch=${BMC_MAILBOX_BRANCH}"
+SRCREV = "${BMC_MAILBOX_SRCREV}"
 PV = "1.0+git${SRCPV}"
 
 # The module lives in a kbuild subdirectory of the repo. Point S at it so the

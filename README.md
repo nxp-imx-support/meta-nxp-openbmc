@@ -45,18 +45,29 @@ This repository includes NXP-specific sublayers:
 The BSP integrates the NXP Linux kernel:
 
 ```
-- NXP Kernel Tree:
-  URI:    https://github.com/nxp-imx/linux-imx
-  branch: lf-6.18.y
-  tag:    lf-6.18.2-1.0.0
-  commit: 07bb2ca4e8a7b292490c183a02dc8bff6645aab7
+- NXP Kernel Tree (public):
+  URI:    https://github.com/nxp-qoriq/linux
+  branch: lf-6.18.y-bmc
+  commit: 1e60e29fabd077c7b8c1585f8c5815fdfaac57c2
 ```
 
 > **Note:** The kernel source is selected by the `BMC_LINUX_USE_INTERNAL` flag
-> in `conf/machine/include/nxp.inc`. When set (the default), the kernel is
-> built from an internal NXP mirror that already carries all of the downstream
-> patches, so the `file://*.patch` groups are not applied. Set it to `"0"` to
-> build from the public GitHub tree shown above with the patches applied.
+> in `conf/machine/include/nxp.inc`. The default is now `"0"`, which builds
+> from the public GitHub tree shown above; set it to `"1"` in `local.conf` to
+> build from the internal NXP Bitbucket mirror (requires SSH access to
+> `bitbucket.sw.nxp.com`).
+>
+> ⚠️ **Migration note:** the default was previously `"1"`. Internal and CI
+> builds that relied on the implicit internal mirror must now set
+> `BMC_LINUX_USE_INTERNAL = "1"` explicitly, otherwise they will silently fetch
+> from `github.com/nxp-qoriq/linux`, which fails on air-gapped build hosts.
+>
+> **Both** branches already carry every OpenBMC downstream kernel change, so
+> the `linux-nxp` recipe applies no `*.patch` files in either case - only the
+> OpenBMC `*.cfg` defconfig fragments are added. The same flag also selects the
+> `bmc_mailbox` source (Bitbucket + `AUTOREV` when internal, public GitHub
+> pinned to `BMC_MAILBOX_SRCREV_GITHUB` when external) and gates the
+> internal-only OBMF packages.
 
 
 
@@ -93,14 +104,17 @@ Additional dependent components:
 
 ## 3. Supported Machines
 
-| Machine | SoC | Board |
-|---|---|---|
-| `evb-imx91` | i.MX91 | 11x11 FRDM |
-| `evb-imx93` | i.MX93 | 11x11 FRDM |
-| `evb-imx943` | i.MX943 | 15x15 EVK |
-| `evb-imx943-am` | i.MX943 | Antmicro DC-SCM |
-| `evb-imx95` | i.MX95 | 15x15 FRDM |
-| `evb-imx95-evk` | i.MX95 | 19x19 EVK |
+| Machine | SoC | Board | Notes |
+|---|---|---|---|
+| `evb-imx91` | i.MX91 | 11x11 FRDM | |
+| `evb-imx93` | i.MX93 | 11x11 FRDM | |
+| `evb-imx93-nor` | i.MX93 | 11x11 FRDM | NOR-flash (JFFS2) image variant |
+| `evb-imx943` | i.MX943 | 15x15 EVK | |
+| `evb-imx943-am` | i.MX943 | Antmicro DC-SCM | |
+| `evb-imx95` | i.MX95 | 15x15 FRDM | |
+| `evb-imx95-evk` | i.MX95 | 19x19 EVK | |
+| `evb-imx95-evk-nor` | i.MX95 | 19x19 EVK | NOR-flash (JFFS2) image variant |
+| `latu-dcsm-imx95` | i.MX95 | 19x19 LATU DC-SCM | Uses a dedicated kernel branch |
 
 Machine definitions are under:
 ```
@@ -110,6 +124,7 @@ meta-nxp/meta-evb-imx943/conf/machine/
 meta-nxp/meta-evb-imx943-am/conf/machine/
 meta-nxp/meta-evb-imx95/conf/machine/
 meta-nxp/meta-evb-imx95-evk/conf/machine/
+meta-nxp/meta-latu-dcsm-imx95/conf/machine/
 ```
 
 ---
@@ -345,7 +360,66 @@ curl -k -u root -X PATCH \
 
 ---
 
-## 10. Directory Structure
+## 10. FPGA Mailbox and the `mock_server` Simulator
+
+On the DC-SCM topology the BMC reaches platform sensors, GPIOs, host power and
+PLDM/MCTP through a Lattice FPGA "mailbox" over QSPI. Two packages provide this,
+both built from the `bmc_mailbox` repo (source centralized in
+`conf/machine/include/nxp.inc` as `BMC_MAILBOX_SRC`/`_BRANCH`/`_SRCREV`):
+
+| Package | What it is |
+|---|---|
+| `qspi-mailbox` | Out-of-tree kernel driver `imx9-qspi-mailbox.ko`. Exposes the FPGA-backed subsystems as standard Linux interfaces (hwmon, virtual I2C/I3C, GPIO, PWM, IIO, eSPI, PLDM) so stock `dbus-sensors` / `entity-manager` bind unmodified. |
+| `mock-server` | Userspace daemon `mock_server`. Plays the managed server **behind** the FPGA, so the whole stack can run with **no FPGA and no DC-SCM hardware**. |
+
+Both install on all builds (internal and external). The OBMF USB/ICP packages
+(`obmf-driver`, `obmf-bmc-apps`) remain internal-only.
+
+### Running against real FPGA hardware
+
+The driver binds automatically when the board's device tree contains the
+mailbox node and the matching `*-mailbox-mock.dtbo` overlay is applied. Once
+loaded, the FPGA sensors appear like any other hwmon/I2C device:
+
+```bash
+lsmod | grep imx9_qspi_mailbox
+sensors                                   # FPGA-backed temps, voltages, fans
+i2cdetect -y -r 20                        # a virtual FPGA I2C bus
+cat /sys/class/hwmon/hwmon*/name          # imx9_fpga_mb = FPGA-internal channel
+ls /sys/kernel/debug/*qspi*/              # stat_txn_ok, stat_crc_err, ...
+```
+
+No `mock_server` is needed in this mode - the driver talks to the real FPGA.
+
+### Running without hardware (the simulator)
+
+For bench/CI use the kernel is built with the userspace relay transport
+(`CONFIG_IMX9_QSPI_MB_USPACE=y`), and `mock_server` answers the driver's mailbox
+requests over `/dev/qspi-mb-sim<N>`. On the image it is started automatically by
+`mock-server.service`; to run it by hand:
+
+```bash
+systemctl status mock-server           # the packaged service
+# or run it directly, tracing every sensor access:
+mock_server -s
+```
+
+Inject a threshold/alert without hardware by writing the live alarm file (the
+daemon re-reads it on change), then watch the chain reach hwmon / Redfish:
+
+```bash
+# spike sensor 0x2000 to 127 C for 15 s at the top of every 60 s window
+echo '0x2000 60 15 127' > /var/run/mock_server_alarm.txt
+```
+
+The operator guide `MOCK_SERVER_USER_GUIDE.md` (shipped under
+`/usr/share/doc/mock_server/` on the image, alongside the alarm/values example
+files) documents the sensor model, value pinning, every alert type, GPIO line
+events, and the D-Bus / Redfish verification steps in full.
+
+---
+
+## 11. Directory Structure
 
 ```
 meta-common/           Shared BSP code (meta-imx-bsp)
@@ -367,23 +441,20 @@ recipes-kernel/        Kernel recipe + patches (all platforms)
 recipes-phosphor/      OpenBMC phosphor services
 ```
 
-### Kernel Patches (`recipes-kernel/linux/files/`)
+### Kernel Config Fragments (`recipes-kernel/linux/files/`)
 
-Patches are applied per-machine via `SRC_URI` overrides in
-`recipes-kernel/linux/linux-nxp_git.bb`. The "Applied to" column reflects
-those overrides (`evb-imx*` machines and the `mx943-nxp-bsp` / `mx95-nxp-bsp`
-BSP overrides used for the iKVM PCIe EP group).
-
-> **Note:** These `file://*.patch` patches are only applied when
-> `BMC_LINUX_USE_INTERNAL = "0"` (public GitHub tree). With the flag set (the
-> default), the kernel already contains these changes and no patches are
-> applied. See `conf/machine/include/nxp.inc`.
+> **Note:** The OpenBMC downstream kernel changes now live natively on both the
+> internal and the public (`nxp-qoriq/linux`, `lf-6.18.y-bmc`) kernel branches,
+> so the `linux-nxp` recipe **no longer applies any `file://*.patch`** - only
+> the OpenBMC `*.cfg` defconfig fragments are added via `SRC_URI`. The obsolete
+> patch files have been removed from this directory; the history is still
+> available in git. See `conf/machine/include/nxp.inc`.
 
 
 
 ---
 
-## 11. Troubleshooting & FAQ
+## 12. Troubleshooting & FAQ
 
 | Symptom | Likely cause / fix |
 |---|---|

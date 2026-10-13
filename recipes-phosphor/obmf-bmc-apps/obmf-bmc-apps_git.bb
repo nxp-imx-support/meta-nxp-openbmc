@@ -3,8 +3,11 @@ DESCRIPTION = "Userspace validation and demo applications for the OBMF ICP-over-
  
 LICENSE = "Apache-2.0"
  
-SRC_URI = "git://git@bitbucket.sw.nxp.com/~nxa15309/ioe_obmf_linux.git;protocol=ssh;branch=main"
-SRCREV = "${AUTOREV}"
+# OBMF source is centralized in conf/machine/include/nxp.inc
+# (OBMF_SRC/_BRANCH/_SRCREV). Internal-only component (installed only when
+# BMC_LINUX_USE_INTERNAL=1).
+SRC_URI = "${OBMF_SRC};branch=${OBMF_BRANCH}"
+SRCREV = "${OBMF_SRCREV}"
  
 PV = "1.0+git${SRCPV}"
  

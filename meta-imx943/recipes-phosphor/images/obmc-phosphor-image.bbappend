@@ -1,4 +1,7 @@
 IMAGE_INSTALL:append = " nxp-pci-gop"
-IMAGE_INSTALL:append = " ${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', 'mock-server qspi-mailbox obmf-driver obmf-bmc-apps', '', d)}"
+# Mailbox stack (public: has a GitHub source) is installed on all builds.
+IMAGE_INSTALL:append = " mock-server qspi-mailbox"
+# OBMF is internal-only.
+IMAGE_INSTALL:append = " ${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', 'obmf-driver obmf-bmc-apps', '', d)}"
 IMAGE_INSTALL:append = " dpu-drm-app"
 IMAGE_INSTALL:append = " usb-hid-forwarder"

@@ -9,12 +9,13 @@ which modelled the same simulated server."
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-# Integration branch carrying the consolidated simulator (PR#4). Revert the
-# branch to "main" once that merges; the recipe needs no other change.
-SRC_URI = "git://git@bitbucket.sw.nxp.com/isp/bmc_mailbox.git;protocol=ssh;branch=wrynose \
+# bmc_mailbox source is centralized in conf/machine/include/nxp.inc
+# (BMC_MAILBOX_SRC/_BRANCH/_SRCREV): Bitbucket for internal builds, public
+# GitHub for external. Only the service file is recipe-local.
+SRC_URI = "${BMC_MAILBOX_SRC};branch=${BMC_MAILBOX_BRANCH} \
            file://mock-server.service \
 "
-SRCREV = "${AUTOREV}"
+SRCREV = "${BMC_MAILBOX_SRCREV}"
 PV = "1.0+git${SRCPV}"
 
 inherit systemd

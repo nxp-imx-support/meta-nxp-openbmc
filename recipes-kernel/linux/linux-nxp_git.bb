@@ -37,69 +37,22 @@ OPENBMC_COMMON_CFG = "file://openbmc_common.cfg"
 # Disables: Layerscape/DPAA2 (not iMX9x SoCs), DVB tuners (not BMC)
 OPENBMC_IMX943_IMX95_CFG = "file://openbmc_imx943_imx95.cfg"
 
-# When building from the internal NXP kernel mirror (BMC_LINUX_USE_INTERNAL=1,
-# set in conf/machine/include/nxp.inc) the branch already contains all of the
-# downstream patches below, so none of the file://*.patch sets are applied.
-# Only the *.cfg config fragments are added to SRC_URI in that case.
-# When building from the public GitHub tree the patches are applied as usual.
+# Downstream kernel patches are NOT applied by this recipe anymore.
+#
+# Both the internal NXP mirror branch (lf-6.18.y-bmc) and the public GitHub
+# tree (nxp-qoriq/linux, branch lf-6.18.y-bmc) now carry every OpenBMC
+# downstream change natively. Applying the old file://*.patch sets on top of
+# either tree would double-apply and fail, so the patch lists are empty for
+# both internal and external builds. The now-unused patch files have been
+# removed from files/; only the *.cfg config fragments, which are the OpenBMC
+# defconfig delta and are not in the kernel tree, remain and are added to
+# SRC_URI below.
 
-# imx91 / imx93 common patches
-IMX91_IMX93_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', ' \
-    file://0005-openbmc-imx91-imx93-support.patch \
-    file://0006-P3T2030-temperature-sensor-imx93.patch \
-    file://0007-imx93-usb-peripheral-mode.patch \
-', d)}"
-
-# The internal mailbox_test branch now carries the imx91/imx93 openbmc BMC
-# device trees (imx91-11x11-frdm-bmc, imx93-11x11-frdm-bmc, etc.), their
-# arch/arm64/boot/dts/freescale/Makefile dtb rules, and the net/mctp/Kconfig
-# change natively, so patch 0005 no longer applies (files already in the tree,
-# Makefile/Kconfig hunks conflict). Leave this empty on internal builds to
-# avoid the double apply. In the public GitHub build the same patch is still
-# applied through IMX91_IMX93_PATCHES, which is empty on internal builds.
-IMX91_BMC_DTS_INTERNAL = ""
-
-
-# imx943 patches
-IMX943_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', ' \
-    file://0008-imx943-local-display.patch \
-    file://0009-imx943-antmicro-dc-scm-dts.patch \
-', d)}"
-
-# imx95 patches
-IMX95_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', ' \
-    file://0010-openbmc-imx95-frdm-support.patch \
-', d)}"
-
-# BSP kernel bug fixes (all platforms)
-BSP_FIXES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', ' \
-    file://0011-media-ox05b1s-fix-variable-declaration-after-label.patch \
-', d)}"
-
-# iKVM PCIe EP patches (mx943 and mx95 only)
-IKVM_PCIE_EP_PATCHES = "${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', '', ' \
-    file://0004-ikvm-pcie-ep-local-display-remote-kvm-imx95-6.18.patch \
-    file://0012-media-stream2v4l2-fix-vb2-release-and-resolution-upd.patch \
-    file://0013-media-stream2v4l2-use-DPU95-blit-engine-for-zero-cop.patch \
-    file://0014-meta-nxp-media-stream2v4l2-add-i.MX94-support-and-fi.patch \
-    file://0015-PCI-endpoint-add-alloc_bar-free_bar-ops-to-pci_epf_o.patch \
-    file://0016-PCI-endpoint-core-restore-generic-BAR-alloc-remove-V.patch \
-    file://0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i.patch \
-    file://0018-PCI-endpoint-Kconfig-Makefile-add-PCI_EPF_IMX9_VGA-e.patch \
-    file://0019-PCI-endpoint-Add-iKVM-HID-input-support-to-i.MX9-VGA.patch \
-    file://0020-PCI-endpoint-Add-configurable-iKVM-display-and-KVM-m.patch \
-    file://0021-arm64-dts-imx95-Add-no-display-DPU-overlay-for-PCIe-.patch \
-', d)}"
-
-
-# Apply common cfg + per-platform patches via MACHINE override
-SRC_URI:append:evb-imx91     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${IMX91_BMC_DTS_INTERNAL} ${BSP_FIXES}"
-SRC_URI:append:evb-imx93     = " ${OPENBMC_COMMON_CFG} ${IMX91_IMX93_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx943    = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX943_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx943-am = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX943_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx95     = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX95_PATCHES} ${BSP_FIXES}"
-SRC_URI:append:evb-imx95-evk = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG} ${IMX95_PATCHES} ${BSP_FIXES}"
-
-SRC_URI:append:mx943-nxp-bsp = " ${IKVM_PCIE_EP_PATCHES}"
-SRC_URI:append:mx95-nxp-bsp  = " ${IKVM_PCIE_EP_PATCHES}"
+# Apply the OpenBMC config fragments via MACHINE override. No kernel patches.
+SRC_URI:append:evb-imx91     = " ${OPENBMC_COMMON_CFG}"
+SRC_URI:append:evb-imx93     = " ${OPENBMC_COMMON_CFG}"
+SRC_URI:append:evb-imx943    = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
+SRC_URI:append:evb-imx943-am = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
+SRC_URI:append:evb-imx95     = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
+SRC_URI:append:evb-imx95-evk = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
 

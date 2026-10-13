@@ -20,27 +20,11 @@ KERNEL_DEVICETREE:append:latu-dcsm-imx95 = " freescale/${DTB_BASENAME_ORIG}-ep-m
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../../../recipes-kernel/linux/files:"
 
-# The mx95-nxp-bsp MACHINEOVERRIDES entry would pull in iKVM PCIe EP patches
-# from linux-nxp_git.bb via SRC_URI:append:mx95-nxp-bsp. Remove them here
-# because the latu-dcsm branch already includes all required changes.
-SRC_URI:remove:latu-dcsm-imx95 = " \
-    file://0001-arm64-dts-imx95-19x19-latu-dcsm-add-NOR-flash-partit.patch \
-    file://0002-arm64-dts-imx95-19x19-evk-add-NOR-flash-partitions-f.patch \
-    file://0001-Update-imx95-19x19-latu-dcsm-nor-flash-partitions-si.patch \
-    file://0001-Update-imx95-19x19-evk-nor-flash-partitions-size.patch \
-    file://0004-ikvm-pcie-ep-local-display-remote-kvm-imx95-6.18.patch \
-    file://0012-media-stream2v4l2-fix-vb2-release-and-resolution-upd.patch \
-    file://0013-media-stream2v4l2-use-DPU95-blit-engine-for-zero-cop.patch \
-    file://0014-meta-nxp-media-stream2v4l2-add-i.MX94-support-and-fi.patch \
-    file://0015-PCI-endpoint-add-alloc_bar-free_bar-ops-to-pci_epf_o.patch \
-    file://0016-PCI-endpoint-core-restore-generic-BAR-alloc-remove-V.patch \
-    file://0017-PCI-endpoint-add-pci-epf-imx9-vga-driver-for-i.MX9-i.patch \
-    file://0018-PCI-endpoint-Kconfig-Makefile-add-PCI_EPF_IMX9_VGA-e.patch \
-    file://0019-PCI-endpoint-Add-iKVM-HID-input-support-to-i.MX9-VGA.patch \
-    file://0020-PCI-endpoint-Add-configurable-iKVM-display-and-KVM-m.patch \
-    file://0021-arm64-dts-imx95-Add-no-display-DPU-overlay-for-PCIe-.patch \
-"
-
+# No kernel patches are applied by the shared linux-nxp recipe anymore (both
+# the internal and public GitHub trees carry the downstream changes natively),
+# so there is nothing to SRC_URI:remove here. The latu-dcsm branch likewise
+# carries all its board-specific changes; this recipe only adds config
+# fragments.
 SRC_URI:append:latu-dcsm-imx95 = " \
     file://openbmc_common.cfg \
     file://openbmc_imx943_imx95.cfg \
