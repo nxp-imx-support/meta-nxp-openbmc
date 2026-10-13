@@ -27,11 +27,11 @@ This layer depends on the following OpenBMC/Yocto layers:
 This repository includes NXP-specific sublayers:
 
 - `meta-common` (shared BSP content: meta-imx-bsp)
-- `meta-evb-imx91` (machine config for i.MX91 FRDM board)
-- `meta-evb-imx93` (machine config for i.MX93 FRDM board)
+- `meta-frdm-imx91` (machine config for i.MX91 FRDM board)
+- `meta-frdm-imx93` (machine config for i.MX93 FRDM board)
 - `meta-evb-imx943` (machine config for i.MX943 EVK board)
 - `meta-evb-imx943-am` (machine config for i.MX943 Antmicro DC-SCM board)
-- `meta-evb-imx95` (machine config for i.MX95 15x15 FRDM board)
+- `meta-frdm-imx95` (machine config for i.MX95 15x15 FRDM board)
 - `meta-evb-imx95-evk` (machine config for i.MX95 19x19 EVK board)
 - `meta-imx91` (SoC-specific recipes for i.MX91)
 - `meta-imx93` (SoC-specific recipes for i.MX93)
@@ -106,23 +106,23 @@ Additional dependent components:
 
 | Machine | SoC | Board | Notes |
 |---|---|---|---|
-| `evb-imx91` | i.MX91 | 11x11 FRDM | |
-| `evb-imx93` | i.MX93 | 11x11 FRDM | |
-| `evb-imx93-nor` | i.MX93 | 11x11 FRDM | NOR-flash (JFFS2) image variant |
+| `frdm-imx91` | i.MX91 | 11x11 FRDM | |
+| `frdm-imx93` | i.MX93 | 11x11 FRDM | |
+| `evk-imx93-nor` | i.MX93 | 11x11 EVK | NOR-flash (JFFS2) image variant. NOR boot is supported on the i.MX93 EVK board only (not FRDM). |
 | `evb-imx943` | i.MX943 | 15x15 EVK | |
 | `evb-imx943-am` | i.MX943 | Antmicro DC-SCM | |
-| `evb-imx95` | i.MX95 | 15x15 FRDM | |
+| `frdm-imx95` | i.MX95 | 15x15 FRDM | |
 | `evb-imx95-evk` | i.MX95 | 19x19 EVK | |
 | `evb-imx95-evk-nor` | i.MX95 | 19x19 EVK | NOR-flash (JFFS2) image variant |
 | `latu-dcsm-imx95` | i.MX95 | 19x19 LATU DC-SCM | Uses a dedicated kernel branch |
 
 Machine definitions are under:
 ```
-meta-nxp/meta-evb-imx91/conf/machine/
-meta-nxp/meta-evb-imx93/conf/machine/
+meta-nxp/meta-frdm-imx91/conf/machine/
+meta-nxp/meta-frdm-imx93/conf/machine/
 meta-nxp/meta-evb-imx943/conf/machine/
 meta-nxp/meta-evb-imx943-am/conf/machine/
-meta-nxp/meta-evb-imx95/conf/machine/
+meta-nxp/meta-frdm-imx95/conf/machine/
 meta-nxp/meta-evb-imx95-evk/conf/machine/
 meta-nxp/meta-latu-dcsm-imx95/conf/machine/
 ```
@@ -142,8 +142,8 @@ cd meta-nxp && git checkout wrynose
 
 Set up build environment for selected machine:
 ```bash
-. setup evb-imx93
-# or: evb-imx91 / evb-imx943 / evb-imx943-am / evb-imx95 / evb-imx95-evk
+. setup frdm-imx93
+# or: frdm-imx91 / evb-imx943 / evb-imx943-am / frdm-imx95 / evb-imx95-evk
 ```
 
 Build the image:
@@ -423,11 +423,11 @@ events, and the D-Bus / Redfish verification steps in full.
 
 ```
 meta-common/           Shared BSP code (meta-imx-bsp)
-meta-evb-imx91/        Machine config: i.MX91 FRDM
-meta-evb-imx93/        Machine config: i.MX93 FRDM
+meta-frdm-imx91/       Machine config: i.MX91 FRDM
+meta-frdm-imx93/       Machine config: i.MX93 FRDM
 meta-evb-imx943/       Machine config: i.MX943 EVK
 meta-evb-imx943-am/    Machine config: i.MX943 Antmicro DC-SCM
-meta-evb-imx95/        Machine config: i.MX95 15x15 FRDM
+meta-frdm-imx95/       Machine config: i.MX95 15x15 FRDM
 meta-evb-imx95-evk/    Machine config: i.MX95 19x19 EVK
 meta-imx91/            SoC-specific recipes: i.MX91
 meta-imx93/            SoC-specific recipes: i.MX93

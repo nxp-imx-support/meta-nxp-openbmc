@@ -15,7 +15,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-arm/meta-arm-toolchain \
   ##OEROOT##/meta-nxp \
   ##OEROOT##/meta-nxp/meta-common/meta-imx-bsp \
-  ##OEROOT##/meta-nxp/meta-evb-imx95 \
+  ##OEROOT##/meta-nxp/meta-frdm-imx95 \
   ##OEROOT##/meta-nxp/meta-latu-dcsm-imx95 \
   ##OEROOT##/meta-nxp/meta-imx95 \
   "

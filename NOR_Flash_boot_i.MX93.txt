@@ -16,13 +16,13 @@ ping 10.232.132.230
 
 
 #Load DTB
-tftp 0xA0000000 imx93-11x11-evk-bmc-host-evb-imx93-nor.dtb
+tftp 0xA0000000 imx93-11x11-evk-bmc-host-evk-imx93-nor.dtb
 sf probe
 sf erase 0x02400000 0x00080000
 sf write 0xA0000000 0x02400000 ${filesize}
 
 #Load compressed kernel
-tftp 0xA1000000 Image.gz-1-6.18.2+git0+177495c151_machine-r0-evb-imx93-nor-20260902134925.bin
+tftp 0xA1000000 Image.gz-1-6.18.2+git0+177495c151_machine-r0-evk-imx93-nor-20260902134925.bin
 sf probe
 sf erase 0x002C0000 0x00F00000
 sf write 0xA1000000 0x002C0000 ${filesize}

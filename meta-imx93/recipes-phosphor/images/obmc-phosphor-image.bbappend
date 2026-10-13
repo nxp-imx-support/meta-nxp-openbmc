@@ -10,7 +10,7 @@ OBMC_WEBUI = "webui-vue"
 OBMC_IMAGE_EXTRA_INSTALL:append:nxp = " webui-vue phosphor-image-signing"
 
 # -----------------------------------------------------------------
-# NOR flash image overrides for evb-imx93-nor machine
+# NOR flash image overrides for evk-imx93-nor machine
 #
 # For NOR flash boot the rootfs must be JFFS2. In addition we produce
 # a "norflash" consolidated image that concatenates flash.bin + kernel
@@ -26,8 +26,8 @@ inherit image_types_nor
 # since CONFIG_MTD_SPI_NOR_USE_4K_SECTORS is disabled in nor-flexspi.cfg).
 # --no-cleanmarkers: NOR flash does not use NAND-style cleanmarkers.
 # --pad: pad output to a full erase block boundary.
-IMAGE_FSTYPES:evb-imx93-nor = "jffs2 norflash"
-EXTRA_IMAGECMD:jffs2:evb-imx93-nor = "--pad --no-cleanmarkers --eraseblock=0x10000"
+IMAGE_FSTYPES:evk-imx93-nor = "jffs2 norflash"
+EXTRA_IMAGECMD:jffs2:evk-imx93-nor = "--pad --no-cleanmarkers --eraseblock=0x10000"
 
 # Pull in NOR size-reduction only when the 'nor-size-reduction' feature is set.
 # Debug builds leave it unset to keep all debug/diagnostic tools.

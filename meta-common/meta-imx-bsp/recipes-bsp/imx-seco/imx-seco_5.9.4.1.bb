@@ -23,4 +23,4 @@ do_deploy () {
     install -m 0644 ${S}/firmware/seco/${SECO_FIRMWARE_NAME} ${DEPLOYDIR}
 }
 
-COMPATIBLE_MACHINE = "(evb-imx93|mx8qm-generic-bsp|mx8qxp-generic-bsp|mx8dxl-generic-bsp|mx8dx-generic-bsp)"
+COMPATIBLE_MACHINE = "(frdm-imx93|mx8qm-generic-bsp|mx8qxp-generic-bsp|mx8dxl-generic-bsp|mx8dx-generic-bsp)"

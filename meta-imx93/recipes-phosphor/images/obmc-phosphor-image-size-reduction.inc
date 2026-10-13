@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # obmc-phosphor-image-size-reduction.inc
 # -------------------------------------------------------------------
-# Rootfs size-reduction policy for the evb-imx93-nor NOR flash BMC.
+# Rootfs size-reduction policy for the evk-imx93-nor NOR flash BMC.
 # Rootfs partition: 39.75 MB (0x027C0000) after squeeze from 56 MB.
 # This file is conditionally included by obmc-phosphor-image.bbappend
 # when DISTRO_FEATURES contains 'nor-size-reduction' (production default).
@@ -44,7 +44,7 @@
 #  xz                 - compression utility; not needed at runtime.
 #  jsnbd              - JSON NBD server; debug utility.
 #  openssh-sftp-server - SFTP server; dropbear replaces openssh.
-IMAGE_INSTALL:remove:evb-imx93-nor = " \
+IMAGE_INSTALL:remove:evk-imx93-nor = " \
     v4l-utils \
     rsync \
     lm-sensors-scripts \
@@ -65,8 +65,8 @@ IMAGE_INSTALL:remove:evb-imx93-nor = " \
 # ===================================================================
 # SSH server swap: dropbear (~400 KB) replaces openssh (~2.5 MB)
 # ===================================================================
-IMAGE_FEATURES:remove:evb-imx93-nor = "ssh-server-openssh"
-IMAGE_FEATURES:append:evb-imx93-nor = " ssh-server-dropbear"
+IMAGE_FEATURES:remove:evk-imx93-nor = "ssh-server-openssh"
+IMAGE_FEATURES:append:evk-imx93-nor = " ssh-server-dropbear"
 
 # ===================================================================
 # Network backend: systemd-networkd REQUIRED by phosphor-network
@@ -78,7 +78,7 @@ IMAGE_FEATURES:append:evb-imx93-nor = " ssh-server-dropbear"
 # apply the DHCP lease).  Note: systemd-resolved is not a standalone
 # package in this systemd build (it is enabled via PACKAGECONFIG), so it
 # is not listed here.
-IMAGE_INSTALL:append:evb-imx93-nor = " systemd-networkd"
+IMAGE_INSTALL:append:evk-imx93-nor = " systemd-networkd"
 
 # ===================================================================
 # Compiler optimization: -Os (optimize for size)
@@ -92,7 +92,7 @@ IMAGE_INSTALL:append:evb-imx93-nor = " systemd-networkd"
 # NOTE: -Os is applied globally.  If timing-sensitive services
 # (e.g. phosphor-watchdog, ipmid, pldmd) show regressions, override
 # per-recipe with FULL_OPTIMIZATION:pn-<recipe> = "-O2 -pipe ${DEBUG_FLAGS}"
-FULL_OPTIMIZATION:evb-imx93-nor = "-Os -pipe ${DEBUG_FLAGS}"
+FULL_OPTIMIZATION:evk-imx93-nor = "-Os -pipe ${DEBUG_FLAGS}"
 
 # ===================================================================
 # Build-time stripping and locale removal
@@ -100,11 +100,11 @@ FULL_OPTIMIZATION:evb-imx93-nor = "-Os -pipe ${DEBUG_FLAGS}"
 
 # Strip ELF binaries; set explicitly so stripping is not accidentally
 # disabled by another layer.
-INHIBIT_PACKAGE_STRIP:evb-imx93-nor = "0"
-INHIBIT_PACKAGE_DEBUG_SPLIT:evb-imx93-nor = "0"
+INHIBIT_PACKAGE_STRIP:evk-imx93-nor = "0"
+INHIBIT_PACKAGE_DEBUG_SPLIT:evk-imx93-nor = "0"
 
 # Remove locale data - BMC firmware does not need i18n support.
-IMAGE_LINGUAS:evb-imx93-nor = ""
+IMAGE_LINGUAS:evk-imx93-nor = ""
 
 # ===================================================================
 # ROOTFS_POSTPROCESS_COMMAND functions
@@ -118,7 +118,7 @@ remove_entity_manager_vendor_configs () {
         -mindepth 1 -maxdepth 1 -type d \
         -exec rm -rf {} +
 }
-ROOTFS_POSTPROCESS_COMMAND:append:evb-imx93-nor = " remove_entity_manager_vendor_configs;"
+ROOTFS_POSTPROCESS_COMMAND:append:evk-imx93-nor = " remove_entity_manager_vendor_configs;"
 
 # --- PLDM PDR vendor definitions (~1.8 MB) ---
 # The iMX95 BMC does not ship pre-built PDR entries; pldmd discovers
@@ -127,7 +127,7 @@ remove_pldm_vendor_pdrs () {
     rm -rf ${IMAGE_ROOTFS}/usr/share/pldm/pdr
     mkdir -p ${IMAGE_ROOTFS}/usr/share/pldm/pdr
 }
-ROOTFS_POSTPROCESS_COMMAND:append:evb-imx93-nor = " remove_pldm_vendor_pdrs;"
+ROOTFS_POSTPROCESS_COMMAND:append:evk-imx93-nor = " remove_pldm_vendor_pdrs;"
 
 # --- Redfish schema removal (~5.2 MB uncompressed) ---
 # Remove ALL Redfish JSON and XML schema files.  bmcweb serves Redfish
@@ -145,7 +145,7 @@ remove_all_redfish_schemas () {
     mkdir -p ${IMAGE_ROOTFS}/usr/share/www/redfish/v1/JsonSchemas
     mkdir -p ${IMAGE_ROOTFS}/usr/share/www/redfish/v1/schema
 }
-ROOTFS_POSTPROCESS_COMMAND:append:evb-imx93-nor = " remove_all_redfish_schemas;"
+ROOTFS_POSTPROCESS_COMMAND:append:evk-imx93-nor = " remove_all_redfish_schemas;"
 
 # --- Binary-level cleanup ---
 # Remove debug/diagnostic binaries that could not be excluded via
@@ -546,4 +546,4 @@ remove_debug_binaries () {
     # systemd-ssh-generator: auto-generates sshd socket units - using dropbear
     #rm -f ${IMAGE_ROOTFS}/usr/lib/systemd/system-generators/systemd-ssh-generator 2>/dev/null || true
 }
-ROOTFS_POSTPROCESS_COMMAND:append:evb-imx93-nor = " remove_debug_binaries;"
+ROOTFS_POSTPROCESS_COMMAND:append:evk-imx93-nor = " remove_debug_binaries;"

@@ -1,2 +1,2 @@
-FILESEXTRAPATHS:prepend:evb-imx91 := "${THISDIR}/${PN}:"
-SRC_URI:append:evb-imx91 = " file://evb-imx91.xml.patch.xml"
+FILESEXTRAPATHS:prepend:frdm-imx91 := "${THISDIR}/${PN}:"
+SRC_URI:append:frdm-imx91 = " file://frdm-imx91.xml.patch.xml"

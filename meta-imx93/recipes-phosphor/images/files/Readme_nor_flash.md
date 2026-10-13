@@ -5,8 +5,8 @@
 The following files must be in the same directory:
 
 - `flash_nor_uuu.auto` - UUU script for NOR flash programming
-- `imx-boot-evb-imx93-nor-fspi.bin-flash_singleboot` - Bootloader image
-- `obmc-phosphor-image-evb-imx93-nor.norflash` - Consolidated NOR flash image
+- `imx-boot-evk-imx93-nor-fspi.bin-flash_singleboot` - Bootloader image
+- `obmc-phosphor-image-evk-imx93-nor.norflash` - Consolidated NOR flash image
 
 ## Usage
 

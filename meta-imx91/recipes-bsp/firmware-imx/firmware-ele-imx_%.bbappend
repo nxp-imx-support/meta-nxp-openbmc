@@ -1,1 +1,1 @@
-COMPATIBLE_MACHINE:append = "|evb-imx91"
+COMPATIBLE_MACHINE:append = "|frdm-imx91"
