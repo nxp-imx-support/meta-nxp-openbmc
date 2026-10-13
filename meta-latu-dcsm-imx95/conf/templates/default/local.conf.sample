@@ -73,7 +73,13 @@ JFFS2_ERASEBLOCK = "0x10000"
 
 # ---------------------------------------------------------------------------
 # LATU DC-SCM source selection for u-boot / imx-system-manager / imx-mkimage
+# / imx-oei only.
 #   "1" = use LATU custom NXP-internal (bitbucket.sw.nxp.com) sources and branches
 #   "0" = use upstream defaults from meta-imx-bsp (github.com/nxp-imx)
+#
+# This does NOT select the kernel. latu-dcsm now builds the shared BMC kernel
+# (its board support is merged into lf-6.18.y-bmc), so the kernel source is
+# chosen by BMC_LINUX_USE_INTERNAL in conf/machine/include/nxp.inc, the same
+# switch every other nxp machine uses.
 # ---------------------------------------------------------------------------
 LATU_USE_CUSTOM_SRC ?= "1"
