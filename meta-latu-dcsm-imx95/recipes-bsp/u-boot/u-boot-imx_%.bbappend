@@ -5,11 +5,20 @@
 
 LATU_USE_CUSTOM_SRC ?= "1"
 
-UBOOT_SRC = "${@'git://git@bitbucket.sw.nxp.com/isp/uboot-imx-dcscm.git;protocol=ssh' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else 'git://github.com/nxp-imx/uboot-imx.git;protocol=https'}"
-SRCBRANCH = "${@'lf_v2026.04' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else 'lf_v2026.04'}"
-SRCREV    = "${AUTOREV}"
+# Always use GitHub upstream source.
+# When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
+UBOOT_SRC = "git://github.com/nxp-imx/uboot-imx.git;protocol=https"
+SRCBRANCH = "lf_v2026.04"
+SRCREV = "bb41975aeb4cbd153b49c9fd62da1d64cd65968d"
 
+# latu-dcsm-imx95 env/defconfig files + latu-patches/ for patch files.
 FILESEXTRAPATHS:prepend:latu-dcsm-imx95 := "${THISDIR}/files/latu-dcsm-imx95:${THISDIR}/files/latu-dcsm-imx95/nor:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/latu-patches:"
+
+SRC_URI:append = "${@' \
+    file://0001-arch-arm-dts-add-imx943-dc-scm-dtb-and-u-boot.dtsi.patch \
+    file://0002-Adds-LATU_DCSM-base-DTS-file.patch \
+    file://0003-Port-the-imx943-dc-scm-dtsi-for-2026.04.patch' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ''}"
 
 # Select NOR fragment for fspi based on LATU_USE_CUSTOM_SRC:
 #   1 (custom latu-dcsm src) -> defconfig-fragment.cfg     (latu-dcsm DTB, CONFIG_OF_UPSTREAM=n)

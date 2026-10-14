@@ -1,0 +1,1415 @@
+From 94a9ab31f8d0de1155af84969d797c96ca157a3b Mon Sep 17 00:00:00 2001
+From: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+Date: Thu, 3 Sep 2026 11:32:50 +0530
+Subject: [PATCH 23/24] Fix iMX943 fspi header
+
+Upstream-Status: Pending
+
+Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+---
+ .../scripts/fcb_mimx943_flexspi_nor.yaml      | 406 +++++++++---------
+ ..._MT35XU512ABA1G12 => fspi_header_MT35XU2G} |  28 +-
+ 2 files changed, 218 insertions(+), 216 deletions(-)
+ rename fcb_mimx943_flexspi_nor.yaml => iMX94/scripts/fcb_mimx943_flexspi_nor.yaml (98%)
+ rename iMX94/scripts/{fspi_header_MT35XU512ABA1G12 => fspi_header_MT35XU2G} (65%)
+
+diff --git a/fcb_mimx943_flexspi_nor.yaml b/iMX94/scripts/fcb_mimx943_flexspi_nor.yaml
+similarity index 98%
+rename from fcb_mimx943_flexspi_nor.yaml
+rename to iMX94/scripts/fcb_mimx943_flexspi_nor.yaml
+index b43d0fc..bad04b5 100644
+--- a/fcb_mimx943_flexspi_nor.yaml
++++ b/iMX94/scripts/fcb_mimx943_flexspi_nor.yaml
+@@ -1,4 +1,6 @@
+-# ========================  Flash Configuration Block template for mimx943, Revision: latest.  =========================
++#   Flash Configuration Block template for mimx943, Revision: latest..
++# Created: 03/09/2026 11:30:27.
++# NXP SPSDK version: 3.11.0  
+ 
+ # ======================================================================================================================
+ #                                                 == General Options ==                                                 
+@@ -8,7 +10,7 @@
+ family: mimx943
+ # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+ # Description: Revision of silicon. The 'latest' name, means most current revision.
+-# Possible options: <a0, latest>
++# Possible options: <a0, a1, latest>
+ revision: latest
+ # ------------------------------------------===== Memory type [Required] =====------------------------------------------
+ # Description: Specify type of memory used by FCB description.
+@@ -25,22 +27,22 @@ fcb_settings:
+   version:
+     # ------------------------------------------===== bugfix [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b, [07:00] Bugfix - 0
+-    bugfix: 0
++    bugfix: '0x00'
+     # -------------------------------------------===== minor [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b, [15:08] Minor
+-    minor: 0
++    minor: '0x00'
+     # -------------------------------------------===== major [Optional] =====-------------------------------------------
+     # Description: Offset: 16b, Width: 8b, [23:16] Major - 1
+-    major: 1
++    major: '0x01'
+   # --------------------------------------===== readSampleClkSrc [Optional] =====---------------------------------------
+   # Description: Offset: 0x0000000C, Width: 8b;  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
+-  readSampleClkSrc: '0x03'
++  readSampleClkSrc: '0x01'
+   # -----------------------------------------===== csHoldTime [Optional] =====------------------------------------------
+   # Description: Offset: 0x0000000D, Width: 8b;  [0x00d-0x00d] CS hold time, default value: 3
+-  csHoldTime: '0x00'
++  csHoldTime: '0x03'
+   # -----------------------------------------===== csSetupTime [Optional] =====-----------------------------------------
+   # Description: Offset: 0x0000000E, Width: 8b;  [0x00e-0x00e] CS setup time, default value: 3
+-  csSetupTime: '0x00'
++  csSetupTime: '0x03'
+   # -------------------------------------===== columnAddressWidth [Optional] =====--------------------------------------
+   # Description: Offset: 0x0000000F, Width: 8b;  [0x00f-0x00f] Column Address with, for HyperBus protocol, it is fixed
+   # to 3, For Serial NAND, need to refer to datasheet
+@@ -48,7 +50,7 @@ fcb_settings:
+   # -------------------------------------===== deviceModeCfgEnable [Optional] =====-------------------------------------
+   # Description: Offset: 0x00000010, Width: 8b;  [0x010-0x010] Device Mode Configure enable flag, 1 - Enable, 0 -
+   # Disable
+-  deviceModeCfgEnable: '0x01'
++  deviceModeCfgEnable: '0x00'
+   # ---------------------------------------===== deviceModeType [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000011, Width: 8b;  [0x011-0x011] Specify the configuration command type: 0 - Generic, 1 -
+   # Quad Enable, 2 - SPI-to-xSPI, 3 - xSPI-to-SPI
+@@ -56,21 +58,21 @@ fcb_settings:
+   # -------------------------------------===== waitTimeCfgCommands [Optional] =====-------------------------------------
+   # Description: Offset: 0x00000012, Width: 16b;  [0x012-0x013] Wait time for all configuration commands, unit: 100us,
+   # Used for DPI/QPI/OPI switch or reset command
+-  waitTimeCfgCommands: '0x0001'
++  waitTimeCfgCommands: '0x0000'
+   # ----------------------------------------===== deviceModeSeq [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000014, Width: 32b;  [0x014-0x017] Device mode sequence info, [7:0] - LUT sequence id,
+   # [15:8] - LUt sequence number, [31:16] Reserved
+   deviceModeSeq:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 1
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 4
++    seqId: '0x00'
+   # ----------------------------------------===== deviceModeArg [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000018, Width: 32b;  [0x018-0x01b] Argument/Parameter for device configuration. effective
+   # only when deviceModeCfgEnable = 1
+-  deviceModeArg: '0x000000E7'
++  deviceModeArg: '0x00000000'
+   # ---------------------------------------===== configCmdEnable [Optional] =====---------------------------------------
+   # Description: Offset: 0x0000001C, Width: 8b;  [0x01c-0x01c] Configure command Enable Flag, 1 - Enable, 0 - Disable
+   configCmdEnable: '0x00'
+@@ -80,30 +82,30 @@ fcb_settings:
+   configCmdSeqs_0:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== configCmdSeqs_1 [Optional] =====---------------------------------------
+   # Description: Offset: 0x00000024, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
+   # as deviceModeSeq
+   configCmdSeqs_1:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== configCmdSeqs_2 [Optional] =====---------------------------------------
+   # Description: Offset: 0x00000028, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
+   # as deviceModeSeq
+   configCmdSeqs_2:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== configCmdArgs_0 [Optional] =====---------------------------------------
+   # Description: Offset: 0x00000030, Width: 32b;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
+   configCmdArgs_0: '0x00000000'
+@@ -116,25 +118,25 @@ fcb_settings:
+   # ------------------------------------===== controllerMiscOption [Optional] =====-------------------------------------
+   # Description: Offset: 0x00000040, Width: 32b;  [0x040-0x043] Controller Misc Options, see Misc feature bit
+   # definitions for more details
+-  controllerMiscOption: '0x00000050'
++  controllerMiscOption: '0x00000000'
+   # -----------------------------------------===== deviceType [Optional] =====------------------------------------------
+   # Description: Offset: 0x00000044, Width: 8b;  [0x044-0x044] Device Type:  See Flash Type Definition for more details
+   deviceType: '0x00'
+   # ----------------------------------------===== sflashPadType [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000045, Width: 8b;  [0x045-0x045] Serial Flash Pad Type: 1 - Single, 2 - Dual, 4 - Quad, 8
+   # - Octal
+-  sflashPadType: '0x08'
++  sflashPadType: '0x04'
+   # ----------------------------------------===== serialClkFreq [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000046, Width: 8b;  [0x046-0x046] Serial Flash Frequency, device specific definitions, See
+   # System Boot Chapter for more details
+-  serialClkFreq: '0x08'
++  serialClkFreq: '0x06'
+   # -------------------------------------===== lutCustomSeqEnable [Optional] =====--------------------------------------
+   # Description: Offset: 0x00000047, Width: 8b;  [0x047-0x047] LUT customization Enable, it is required if the
+   # program/erase cannot be done using 1 LUT sequence, currently, only applicable to HyperFLASH
+   lutCustomSeqEnable: '0x00'
+   # ----------------------------------------===== sflashA1Size [Optional] =====-----------------------------------------
+   # Description: Offset: 0x00000050, Width: 32b;  [0x050-0x053] Size of Flash connected to A1
+-  sflashA1Size: '0x04000000'
++  sflashA1Size: '0x10000000'
+   # ----------------------------------------===== sflashA2Size [Optional] =====-----------------------------------------
+   # Description: Offset: 0x00000054, Width: 32b;  [0x054-0x057] Size of Flash connected to A2
+   sflashA2Size: '0x00000000'
+@@ -180,10 +182,10 @@ fcb_settings:
+   dataValidTime:
+     # ---------------------------------------===== dllAValidTime [Optional] =====---------------------------------------
+     # Description: Offset: 0b, Width: 16b,  Data valid time for DLLA in terms of 0.1 ns
+-    dllAValidTime: 0
++    dllAValidTime: '0x0000'
+     # ---------------------------------------===== dllBValidTime [Optional] =====---------------------------------------
+     # Description: Offset: 16b, Width: 16b,  Data valid time for DLLB in terms of 0.1 ns
+-    dllBValidTime: 0
++    dllBValidTime: '0x0000'
+   # -----------------------------------------===== busyOffset [Optional] =====------------------------------------------
+   # Description: Offset: 0x0000007C, Width: 16b;  [0x07c-0x07d] Busy offset, valid value: 0-31
+   busyOffset: '0x0000'
+@@ -196,7 +198,7 @@ fcb_settings:
+   lookupTable_seq0_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: '0xFD'
++    OPERAND: '0x0B'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -204,7 +206,7 @@ fcb_settings:
+     # - 4PAD, (2): Quad mode. Four pads are used.
+     # - 8PAD, (3): Octal mode. Eight pads are used.
+     # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+-    NUM_PADS: 8PAD
++    NUM_PADS: 1PAD
+     # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+     # Description: Offset: 10b, Width: 6b, Instruction operation code.
+     # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+@@ -250,33 +252,33 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+-    OPERATION_CODE: CMD_DDR
++    OPERATION_CODE: CMD_SDR
+   lookupTable_seq0_instr1:
+-    OPERAND: '0x20'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: RADDR_DDR
++    OPERAND: '0x18'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: RADDR_SDR
+   lookupTable_seq0_instr2:
+-    OPERAND: '0x14'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: DUMMY_DDR
++    OPERAND: '0x08'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: CADDR_SDR
+   lookupTable_seq0_instr3:
+     OPERAND: '0x04'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: READ_DDR
++    NUM_PADS: 1PAD
++    OPERATION_CODE: MODE8_SDR
+   lookupTable_seq0_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq0_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq0_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq0_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq1_instr0 [Optional] =====-----------------------------------
+@@ -284,7 +286,7 @@ fcb_settings:
+   lookupTable_seq1_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0x05
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -292,7 +294,7 @@ fcb_settings:
+     # - 4PAD, (2): Quad mode. Four pads are used.
+     # - 8PAD, (3): Octal mode. Eight pads are used.
+     # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+-    NUM_PADS: 8PAD
++    NUM_PADS: 1PAD
+     # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+     # Description: Offset: 10b, Width: 6b, Instruction operation code.
+     # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+@@ -338,33 +340,33 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+-    OPERATION_CODE: CMD_DDR
++    OPERATION_CODE: STOP
+   lookupTable_seq1_instr1:
+-    OPERAND: 0xFA
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: CMD_DDR
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq1_instr2:
+-    OPERAND: 0x04
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: DUMMY_DDR
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq1_instr3:
+-    OPERAND: 0x04
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: READ_DDR
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq1_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq1_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq1_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq1_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq2_instr0 [Optional] =====-----------------------------------
+@@ -372,7 +374,7 @@ fcb_settings:
+   lookupTable_seq2_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -428,31 +430,31 @@ fcb_settings:
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr1:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr2:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr3:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq2_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq3_instr0 [Optional] =====-----------------------------------
+@@ -460,7 +462,7 @@ fcb_settings:
+   lookupTable_seq3_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0x06
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -468,7 +470,7 @@ fcb_settings:
+     # - 4PAD, (2): Quad mode. Four pads are used.
+     # - 8PAD, (3): Octal mode. Eight pads are used.
+     # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+-    NUM_PADS: 8PAD
++    NUM_PADS: 1PAD
+     # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+     # Description: Offset: 10b, Width: 6b, Instruction operation code.
+     # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+@@ -514,33 +516,33 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+-    OPERATION_CODE: CMD_DDR
++    OPERATION_CODE: STOP
+   lookupTable_seq3_instr1:
+-    OPERAND: 0xF9
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: CMD_DDR
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq3_instr2:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq3_instr3:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq3_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq3_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq3_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq3_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq4_instr0 [Optional] =====-----------------------------------
+@@ -548,7 +550,7 @@ fcb_settings:
+   lookupTable_seq4_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0x72
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -602,33 +604,33 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+-    OPERATION_CODE: CMD_SDR
++    OPERATION_CODE: STOP
+   lookupTable_seq4_instr1:
+-    OPERAND: 0x20
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+-    OPERATION_CODE: RADDR_SDR
++    OPERATION_CODE: STOP
+   lookupTable_seq4_instr2:
+-    OPERAND: 0x01
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+-    OPERATION_CODE: WRITE_SDR
++    OPERATION_CODE: STOP
+   lookupTable_seq4_instr3:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq4_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq4_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq4_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq4_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq5_instr0 [Optional] =====-----------------------------------
+@@ -636,7 +638,7 @@ fcb_settings:
+   lookupTable_seq5_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -692,31 +694,31 @@ fcb_settings:
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr1:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr2:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr3:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq5_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq6_instr0 [Optional] =====-----------------------------------
+@@ -724,7 +726,7 @@ fcb_settings:
+   lookupTable_seq6_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -780,31 +782,31 @@ fcb_settings:
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr1:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr2:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr3:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq6_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq7_instr0 [Optional] =====-----------------------------------
+@@ -812,7 +814,7 @@ fcb_settings:
+   lookupTable_seq7_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -868,31 +870,31 @@ fcb_settings:
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr1:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr2:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr3:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr4:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr5:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr6:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   lookupTable_seq7_instr7:
+-    OPERAND: 0
++    OPERAND: '0x00'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: STOP
+   # -----------------------------------===== lookupTable_seq8_instr0 [Optional] =====-----------------------------------
+@@ -900,7 +902,7 @@ fcb_settings:
+   lookupTable_seq8_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -960,7 +962,7 @@ fcb_settings:
+   lookupTable_seq8_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1020,7 +1022,7 @@ fcb_settings:
+   lookupTable_seq8_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1080,7 +1082,7 @@ fcb_settings:
+   lookupTable_seq8_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1140,7 +1142,7 @@ fcb_settings:
+   lookupTable_seq8_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1200,7 +1202,7 @@ fcb_settings:
+   lookupTable_seq8_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1260,7 +1262,7 @@ fcb_settings:
+   lookupTable_seq8_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1320,7 +1322,7 @@ fcb_settings:
+   lookupTable_seq8_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1380,7 +1382,7 @@ fcb_settings:
+   lookupTable_seq9_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1440,7 +1442,7 @@ fcb_settings:
+   lookupTable_seq9_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1500,7 +1502,7 @@ fcb_settings:
+   lookupTable_seq9_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1560,7 +1562,7 @@ fcb_settings:
+   lookupTable_seq9_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1620,7 +1622,7 @@ fcb_settings:
+   lookupTable_seq9_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1680,7 +1682,7 @@ fcb_settings:
+   lookupTable_seq9_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1740,7 +1742,7 @@ fcb_settings:
+   lookupTable_seq9_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1800,7 +1802,7 @@ fcb_settings:
+   lookupTable_seq9_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1860,7 +1862,7 @@ fcb_settings:
+   lookupTable_seq10_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1920,7 +1922,7 @@ fcb_settings:
+   lookupTable_seq10_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -1980,7 +1982,7 @@ fcb_settings:
+   lookupTable_seq10_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2040,7 +2042,7 @@ fcb_settings:
+   lookupTable_seq10_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2100,7 +2102,7 @@ fcb_settings:
+   lookupTable_seq10_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2160,7 +2162,7 @@ fcb_settings:
+   lookupTable_seq10_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2220,7 +2222,7 @@ fcb_settings:
+   lookupTable_seq10_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2280,7 +2282,7 @@ fcb_settings:
+   lookupTable_seq10_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2340,7 +2342,7 @@ fcb_settings:
+   lookupTable_seq11_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2400,7 +2402,7 @@ fcb_settings:
+   lookupTable_seq11_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2460,7 +2462,7 @@ fcb_settings:
+   lookupTable_seq11_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2520,7 +2522,7 @@ fcb_settings:
+   lookupTable_seq11_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2580,7 +2582,7 @@ fcb_settings:
+   lookupTable_seq11_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2640,7 +2642,7 @@ fcb_settings:
+   lookupTable_seq11_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2700,7 +2702,7 @@ fcb_settings:
+   lookupTable_seq11_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2760,7 +2762,7 @@ fcb_settings:
+   lookupTable_seq11_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2820,7 +2822,7 @@ fcb_settings:
+   lookupTable_seq12_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2880,7 +2882,7 @@ fcb_settings:
+   lookupTable_seq12_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -2940,7 +2942,7 @@ fcb_settings:
+   lookupTable_seq12_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3000,7 +3002,7 @@ fcb_settings:
+   lookupTable_seq12_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3060,7 +3062,7 @@ fcb_settings:
+   lookupTable_seq12_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3120,7 +3122,7 @@ fcb_settings:
+   lookupTable_seq12_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3180,7 +3182,7 @@ fcb_settings:
+   lookupTable_seq12_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3240,7 +3242,7 @@ fcb_settings:
+   lookupTable_seq12_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3300,7 +3302,7 @@ fcb_settings:
+   lookupTable_seq13_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3360,7 +3362,7 @@ fcb_settings:
+   lookupTable_seq13_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3420,7 +3422,7 @@ fcb_settings:
+   lookupTable_seq13_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3480,7 +3482,7 @@ fcb_settings:
+   lookupTable_seq13_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3540,7 +3542,7 @@ fcb_settings:
+   lookupTable_seq13_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3600,7 +3602,7 @@ fcb_settings:
+   lookupTable_seq13_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3660,7 +3662,7 @@ fcb_settings:
+   lookupTable_seq13_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3720,7 +3722,7 @@ fcb_settings:
+   lookupTable_seq13_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3780,7 +3782,7 @@ fcb_settings:
+   lookupTable_seq14_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3840,7 +3842,7 @@ fcb_settings:
+   lookupTable_seq14_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3900,7 +3902,7 @@ fcb_settings:
+   lookupTable_seq14_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -3960,7 +3962,7 @@ fcb_settings:
+   lookupTable_seq14_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4020,7 +4022,7 @@ fcb_settings:
+   lookupTable_seq14_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4080,7 +4082,7 @@ fcb_settings:
+   lookupTable_seq14_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4140,7 +4142,7 @@ fcb_settings:
+   lookupTable_seq14_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4200,7 +4202,7 @@ fcb_settings:
+   lookupTable_seq14_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4260,7 +4262,7 @@ fcb_settings:
+   lookupTable_seq15_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4320,7 +4322,7 @@ fcb_settings:
+   lookupTable_seq15_instr1:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4380,7 +4382,7 @@ fcb_settings:
+   lookupTable_seq15_instr2:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4440,7 +4442,7 @@ fcb_settings:
+   lookupTable_seq15_instr3:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4500,7 +4502,7 @@ fcb_settings:
+   lookupTable_seq15_instr4:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4560,7 +4562,7 @@ fcb_settings:
+   lookupTable_seq15_instr5:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4620,7 +4622,7 @@ fcb_settings:
+   lookupTable_seq15_instr6:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4680,7 +4682,7 @@ fcb_settings:
+   lookupTable_seq15_instr7:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: 0
++    OPERAND: '0x00'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -4740,109 +4742,109 @@ fcb_settings:
+   lutCustomSeq_0:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000184, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_1:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000188, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_2:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
+   # Description: Offset: 0x0000018C, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_3:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000190, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_4:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000194, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_5:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000198, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_6:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
+   # Description: Offset: 0x0000019C, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_7:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
+   # Description: Offset: 0x000001A0, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_8:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
+   # Description: Offset: 0x000001A4, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_9:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
+   # Description: Offset: 0x000001A8, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_10:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
+   # Description: Offset: 0x000001AC, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+   lutCustomSeq_11:
+     # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+-    seqNum: 0
++    seqNum: '0x00'
+     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+-    seqId: 0
++    seqId: '0x00'
+   # ------------------------------------------===== pageSize [Optional] =====-------------------------------------------
+   # Description: Offset: 0x000001C0, Width: 32b;  Page size of Serial NOR
+   pageSize: '0x00000000'
+@@ -4866,10 +4868,10 @@ fcb_settings:
+   flashStateCtx:
+     # ---------------------------------------===== flashPorMode [Optional] =====----------------------------------------
+     # Description: Offset: 0b, Width: 8b,  Flash POR Mode
+-    flashPorMode: 0
++    flashPorMode: '0x00'
+     # -------------------------------------===== flashCurrentMode [Optional] =====--------------------------------------
+     # Description: Offset: 8b, Width: 8b,  Sequence Number, valid number: 1-16
+-    flashCurrentMode: 0
++    flashCurrentMode: '0x00'
+     # ----------------------------------===== flashRestoringSequence [Optional] =====-----------------------------------
+     # Description: Offset: 24b, Width: 8b,  Sequence Number, valid number: 1-16
+-    flashRestoringSequence: 0
++    flashRestoringSequence: '0x00'
+diff --git a/iMX94/scripts/fspi_header_MT35XU512ABA1G12 b/iMX94/scripts/fspi_header_MT35XU2G
+similarity index 65%
+rename from iMX94/scripts/fspi_header_MT35XU512ABA1G12
+rename to iMX94/scripts/fspi_header_MT35XU2G
+index dd6737a..d0c8b5c 100644
+--- a/iMX94/scripts/fspi_header_MT35XU512ABA1G12
++++ b/iMX94/scripts/fspi_header_MT35XU2G
+@@ -1,10 +1,10 @@
+ 46434642 /* Tag, ASCII "FCFB" */
+ 00000156 /* Version */
+ 00000000
+-03000000 /* ColumnAddressWidth, csSetupTime, csHoldTime, ReadSampleClkSrc (DQS) */
+-01000100 /* deviceModeCfgEnable=1, waitTimeCfgCommands=0x0001 */
+-01040000 /* seqNum=1 seqId=4 */
+-e7000000 /* deviceModeArg: write 0xE7 to CR2[0] to enable OPI DDR */
++01030300 /* ColumnAddressWidth, csSetupTime, csHoldTime, ReadSampleClkSrc (DQS) */
++00000000 /* deviceModeCfgEnable=1, waitTimeCfgCommands=0x0001 */
++00000000 /* seqNum=1 seqId=4 */
++00000000 /* deviceModeArg: write 0xE7 to CR2[0] to enable OPI DDR */
+ 00000000
+ 00000000
+ 00000000
+@@ -14,12 +14,11 @@ e7000000 /* deviceModeArg: write 0xE7 to CR2[0] to enable OPI DDR */
+ 00000000
+ 00000000
+ 00000000
+-50000000 /* controllerMiscOption: DDR mode + safe clock */
+-00080800 /* deviceType=0, Octal pad, 200MHz */
+ 00000000
++00040600 /* Serial Nor single pad, 133MHz */
+ 00000000
+-00000004 /* SFlashA1Size: 64MB (512Mbit) */
+ 00000000
++00000010 /* SFlashA1Size: 256MB (256GiB) */
+ 00000000
+ 00000000
+ 00000000
+@@ -30,24 +29,25 @@ e7000000 /* deviceModeArg: write 0xE7 to CR2[0] to enable OPI DDR */
+ 00000000
+ 00000000
+ 00000000
+-fd87208b /* seq0 Fast Read OPI DDR 0xFD */
+-14b304a7
++00000000
++0b041808 /* seq0 3-byte fast read *i/
++080c041c
++00000000
++00000000
+ 00000000
+ 00000000
+-0587fa87 /* seq1 Read Status OPI DDR 0x05/0xFA */
+-04b304a7
+ 00000000
+ 00000000
+ 00000000 /* seq2 empty */
+ 00000000
+ 00000000
+ 00000000
+-0687f987 /* seq3 Write Enable OPI DDR 0x06/0xF9 */
+ 00000000
+ 00000000
+ 00000000
+-72042008 /* seq4 WRCR2 enter OPI (SPI) 0x72 */
+-01200000
++00000000
++00000000
++00000000
+ 00000000
+ 00000000
+ 00000000

@@ -1,0 +1,56 @@
+From ba3ddfc89f6cc7dd7e7a7bb6b9248455296f49f8 Mon Sep 17 00:00:00 2001
+From: Chuck Cannon <chuck.cannon@nxp.com>
+Date: Sat, 7 Mar 2026 16:38:51 -0600
+Subject: [PATCH 11/24] Handler i.MX94 A0/A1.
+
+Upstream-Status: Pending
+
+Signed-off-by: Chuck Cannon <chuck.cannon@nxp.com>
+---
+ iMX94/scripts/autobuild.mak | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/iMX94/scripts/autobuild.mak b/iMX94/scripts/autobuild.mak
+index 0319cc5..2aedd6f 100755
+--- a/iMX94/scripts/autobuild.mak
++++ b/iMX94/scripts/autobuild.mak
+@@ -6,6 +6,12 @@ else
+ AT := @
+ endif
+ 
++ifeq ($(LC_REVISION),a0)
++BRD_PRE=-a0
++else
++BRD_PRE=
++endif
++
+ # Aliases
+ nightly : nightly_evk
+ nightly_mek: nightly_evk
+@@ -18,7 +24,7 @@ nightly_mx943evk19lp4: nightly_mx943-19x19-lpddr4-evk
+ nightly_mx943evk15: nightly_mx943-15x15-lpddr4-evk
+ 
+ # MX943 19x19 LPDDR5 EVK
+-nightly_mx943-19x19-lpddr5-evk: BOARD = $(CPU)-19x19-$(DDR)-evk
++nightly_mx943-19x19-lpddr5-evk: BOARD = $(CPU)$(BRD_PRE)-19x19-$(DDR)-evk
+ nightly_mx943-19x19-lpddr5-evk: DTB = imx943-19x19-evk
+ nightly_mx943-19x19-lpddr5-evk: CPU = imx943
+ nightly_mx943-19x19-lpddr5-evk: DDR = lpddr5
+@@ -29,7 +35,7 @@ nightly_mx943-19x19-lpddr5-evk: M33S_FILE = imx943evk_cm33_core1_TCM_power_mode_
+ nightly_mx943-19x19-lpddr5-evk: core_files
+ 
+ # MX943 19x19 LPDDR4X EVK
+-nightly_mx943-19x19-lpddr4-evk: BOARD = $(CPU)-19x19-lpddr4-evk
++nightly_mx943-19x19-lpddr4-evk: BOARD = $(CPU)$(BRD_PRE)-19x19-lpddr4-evk
+ nightly_mx943-19x19-lpddr4-evk: DTB = imx943-19x19-evk
+ nightly_mx943-19x19-lpddr4-evk: CPU = imx943
+ nightly_mx943-19x19-lpddr4-evk: DDR = lpddr4x
+@@ -40,7 +46,7 @@ nightly_mx943-19x19-lpddr4-evk: M33S_FILE = imx943evk_cm33_core1_TCM_power_mode_
+ nightly_mx943-19x19-lpddr4-evk: core_files
+ 
+ # MX943 15x15 LPDDR4X EVK
+-nightly_mx943-15x15-lpddr4-evk: BOARD = $(CPU)-15x15-lpddr4-evk
++nightly_mx943-15x15-lpddr4-evk: BOARD = $(CPU)$(BRD_PRE)-15x15-lpddr4-evk
+ nightly_mx943-15x15-lpddr4-evk: DTB = imx943-15x15-evk
+ nightly_mx943-15x15-lpddr4-evk: CPU = imx943
+ nightly_mx943-15x15-lpddr4-evk: DDR = lpddr4x

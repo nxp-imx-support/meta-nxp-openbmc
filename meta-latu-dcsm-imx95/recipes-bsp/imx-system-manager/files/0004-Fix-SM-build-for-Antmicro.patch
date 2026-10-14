@@ -1,0 +1,581 @@
+From 6fa28d3abefeee8fadebed69962b3d1ce3add7b2 Mon Sep 17 00:00:00 2001
+From: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+Date: Wed, 2 Sep 2026 14:51:42 +0530
+Subject: [PATCH 4/4] Fix SM build for Antmicro
+Upstream-Status: Pending
+
+Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+---
+ configs/mx94-dc-scm.cfg           |   4 +-
+ configs/mx94-dc-scm/config_scmi.h |   5 +-
+ configs/mx94-dc-scm/config_trdc.h | 424 +++++++++++++++---------------
+ 3 files changed, 218 insertions(+), 215 deletions(-)
+
+diff --git a/configs/mx94-dc-scm.cfg b/configs/mx94-dc-scm.cfg
+index 44b3985..4b49dfe 100755
+--- a/configs/mx94-dc-scm.cfg
++++ b/configs/mx94-dc-scm.cfg
+@@ -62,7 +62,7 @@ READONLY:           perm=ro
+ # ELE Domain                                                               #
+ #==========================================================================#
+ 
+-DOM0                did=0
++DOM0                name="ELE", did=0
+ 
+ DATA:               perm=rw
+ 
+@@ -78,7 +78,7 @@ DDR                 DATA, begin=0x080000000, end=0x87FFFFFFF, nodbg
+ # V2X Domain                                                               #
+ #==========================================================================#
+ 
+-DOM12               did=12
++DOM12               name="V2X", did=12
+ 
+ DFMT1:              sa=bypass, pa=bypass
+ OWNER:
+diff --git a/configs/mx94-dc-scm/config_scmi.h b/configs/mx94-dc-scm/config_scmi.h
+index b094b60..38d30d4 100755
+--- a/configs/mx94-dc-scm/config_scmi.h
++++ b/configs/mx94-dc-scm/config_scmi.h
+@@ -207,6 +207,8 @@
+         .ctrlPerms[BRD_SM_CTRL_PCA2131] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[BRD_SM_CTRL_TEST] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[BRD_SM_CTRL_TEST_A] = SM_SCMI_PERM_ALL, \
++        .ctrlPerms[DEV_SM_CTRL_BISS1_PULSE_STR_CTL] = SM_SCMI_PERM_ALL, \
++        .ctrlPerms[DEV_SM_CTRL_ENDAT3_STATUS] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_GPT_MUX] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_XBAR_DIR_CTRL] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_XBAR_TRIG_SYNC] = SM_SCMI_PERM_ALL, \
+@@ -404,7 +406,7 @@
+         .lmmPerms[4] = SM_SCMI_PERM_ALL, \
+         .pdPerms[DEV_SM_PD_M71] = SM_SCMI_PERM_ALL, \
+         .pdPerms[DEV_SM_PD_NETC] = SM_SCMI_PERM_ALL, \
+-        .perfPerms[DEV_SM_PERF_M70] = SM_SCMI_PERM_ALL, \
++        .perfPerms[DEV_SM_PERF_M71] = SM_SCMI_PERM_ALL, \
+         .perlpiPerms[DEV_SM_PERLPI_LPUART12] = SM_SCMI_PERM_ALL, \
+         .perlpiPerms[DEV_SM_PERLPI_WDOG6] = SM_SCMI_PERM_ALL, \
+         .rtcPerms[BRD_SM_RTC_PCA2131] = SM_SCMI_PERM_PRIV, \
+@@ -617,6 +619,7 @@
+         .ctrlPerms[BRD_SM_CTRL_SD3_WAKE] = SM_SCMI_PERM_NOTIFY, \
+         .ctrlPerms[BRD_SM_CTRL_TEST_A] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_ADC_TEST] = SM_SCMI_PERM_ALL, \
++        .ctrlPerms[DEV_SM_CTRL_ADC_TRIGGER] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_MQS1_SETTINGS] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_MQS2_SETTINGS] = SM_SCMI_PERM_ALL, \
+         .ctrlPerms[DEV_SM_CTRL_PDM_CLK_SEL] = SM_SCMI_PERM_ALL, \
+diff --git a/configs/mx94-dc-scm/config_trdc.h b/configs/mx94-dc-scm/config_trdc.h
+index 0050b8f..eb5f486 100755
+--- a/configs/mx94-dc-scm/config_trdc.h
++++ b/configs/mx94-dc-scm/config_trdc.h
+@@ -60,41 +60,41 @@
+ /*! Config for TRDC A */
+ #define SM_TRDC_A_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0xB00000A0U, \
+-        SM_CFG_W1(0x00000820U), 0xB0000012U, \
+-        SM_CFG_W1(0x00000840U), 0xB0000013U, \
+-        SM_CFG_W1(0x00000860U), 0xB0000013U, \
+-        SM_CFG_W1(0x00000880U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008c0U), 0xB0000014U, \
+-        SM_CFG_W1(0x000008e0U), 0xB000001EU, \
+-        SM_CFG_W1(0x00000900U), 0xB000001DU, \
+-        SM_CFG_W1(0x00000920U), 0xB000001DU, \
+-        SM_CFG_W1(0x00000a00U), 0x90000002U, \
+-        SM_CFG_W1(0x00000a04U), 0x90000002U, \
+-        SM_CFG_W1(0x00000a08U), 0x90000002U, \
+-        SM_CFG_W1(0x00000a20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000aa0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ac0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ae0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ba0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000bc0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000be0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ca0U), 0xB00000A1U, \
+-        SM_CFG_W1(0x00000cc0U), 0xB00000A1U, \
++        SM_CFG_W1(0x00000800U), 0xA00000A0U, \
++        SM_CFG_W1(0x00000820U), 0xA0000012U, \
++        SM_CFG_W1(0x00000840U), 0xA0000013U, \
++        SM_CFG_W1(0x00000860U), 0xA0000013U, \
++        SM_CFG_W1(0x00000880U), 0xA0000053U, \
++        SM_CFG_W1(0x000008a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008c0U), 0xA0000014U, \
++        SM_CFG_W1(0x000008e0U), 0xA000001EU, \
++        SM_CFG_W1(0x00000900U), 0xA000001DU, \
++        SM_CFG_W1(0x00000920U), 0xA000001DU, \
++        SM_CFG_W1(0x00000a00U), 0x80000002U, \
++        SM_CFG_W1(0x00000a04U), 0x80000002U, \
++        SM_CFG_W1(0x00000a08U), 0x80000002U, \
++        SM_CFG_W1(0x00000a20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000aa0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ac0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ae0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ba0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000bc0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000be0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ca0U), 0xA00000A1U, \
++        SM_CFG_W1(0x00000cc0U), 0xA00000A1U, \
+         SM_CFG_W1(0x00010024U), 0x6666U, \
+         SM_CFG_W1(0x00010028U), 0x7777U, \
+         SM_CFG_W1(0x0001002cU), 0x6600U, \
+@@ -340,9 +340,9 @@
+ /*! Config for TRDC D */
+ #define SM_TRDC_D_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000820U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000840U), 0xB0000053U, \
++        SM_CFG_W1(0x00000800U), 0xA0000053U, \
++        SM_CFG_W1(0x00000820U), 0xA0000053U, \
++        SM_CFG_W1(0x00000840U), 0xA0000053U, \
+         SM_CFG_W1(0x00010024U), 0x6666U, \
+         SM_CFG_W1(0x00010028U), 0x7777U, \
+         SM_CFG_W1(0x0001002cU), 0x6600U, \
+@@ -422,7 +422,7 @@
+         SM_CFG_W1(0x00010644U), 0x99999999U, \
+         SM_CFG_W1(0x00010648U), 0x99999999U, \
+         SM_CFG_W1(0x0001064cU), 0x99999999U, \
+-        SM_CFG_W1(0x00010650U), 0x99999990U, \
++        SM_CFG_W1(0x00010650U), 0x99999999U, \
+         SM_CFG_W1(0x00010654U), 0x00099999U, \
+         SM_CFG_W1(0x00010780U), 0x99999999U, \
+         SM_CFG_W1(0x000107a8U), 0x00000090U, \
+@@ -437,7 +437,7 @@
+         SM_CFG_W1(0x00011244U), 0x99999999U, \
+         SM_CFG_W1(0x00011248U), 0x99999999U, \
+         SM_CFG_W1(0x0001124cU), 0x99999999U, \
+-        SM_CFG_W1(0x00011250U), 0x99999990U, \
++        SM_CFG_W1(0x00011250U), 0x99999999U, \
+         SM_CFG_W1(0x00011254U), 0x00099999U, \
+         SM_CFG_W1(0x00011380U), 0x99999999U, \
+         SM_CFG_W1(0x000113a8U), 0x00999999U, \
+@@ -461,24 +461,24 @@
+ /*! Config for TRDC H */
+ #define SM_TRDC_H_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000820U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000840U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000860U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000880U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000900U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000920U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000940U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000960U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000980U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a20U), 0xB0000053U, \
++        SM_CFG_W1(0x00000800U), 0xA0000053U, \
++        SM_CFG_W1(0x00000820U), 0xA0000053U, \
++        SM_CFG_W1(0x00000840U), 0xA0000053U, \
++        SM_CFG_W1(0x00000860U), 0xA0000053U, \
++        SM_CFG_W1(0x00000880U), 0xA0000053U, \
++        SM_CFG_W1(0x000008a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000900U), 0xA0000053U, \
++        SM_CFG_W1(0x00000920U), 0xA0000053U, \
++        SM_CFG_W1(0x00000940U), 0xA0000053U, \
++        SM_CFG_W1(0x00000960U), 0xA0000053U, \
++        SM_CFG_W1(0x00000980U), 0xA0000053U, \
++        SM_CFG_W1(0x000009a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a20U), 0xA0000053U, \
+         SM_CFG_W1(0x00010024U), 0x6666U, \
+         SM_CFG_W1(0x00010028U), 0x7777U, \
+         SM_CFG_W1(0x0001002cU), 0x6600U, \
+@@ -544,55 +544,55 @@
+ /*! Config for TRDC M */
+ #define SM_TRDC_M_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000820U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000840U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000860U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000880U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000900U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000920U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000940U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000960U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000980U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000aa0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ac0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ae0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ba0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000bc0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000be0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c80U), 0xB00000A8U, \
+-        SM_CFG_W1(0x00000ca0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000cc0U), 0xB000001EU, \
+-        SM_CFG_W1(0x00000ce0U), 0xB00000A9U, \
+-        SM_CFG_W1(0x00000d00U), 0xB00000A9U, \
+-        SM_CFG_W1(0x00000d20U), 0xB00000ACU, \
+-        SM_CFG_W1(0x00000d40U), 0xB00000ACU, \
+-        SM_CFG_W1(0x00000d60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000d80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000da0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000dc0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000de0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000e00U), 0xB0000053U, \
++        SM_CFG_W1(0x00000800U), 0xA0000053U, \
++        SM_CFG_W1(0x00000820U), 0xA0000053U, \
++        SM_CFG_W1(0x00000840U), 0xA0000053U, \
++        SM_CFG_W1(0x00000860U), 0xA0000053U, \
++        SM_CFG_W1(0x00000880U), 0xA0000053U, \
++        SM_CFG_W1(0x000008a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000900U), 0xA0000053U, \
++        SM_CFG_W1(0x00000920U), 0xA0000053U, \
++        SM_CFG_W1(0x00000940U), 0xA0000053U, \
++        SM_CFG_W1(0x00000960U), 0xA0000053U, \
++        SM_CFG_W1(0x00000980U), 0xA0000053U, \
++        SM_CFG_W1(0x000009a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000aa0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ac0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ae0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ba0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000bc0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000be0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c80U), 0xA00000A8U, \
++        SM_CFG_W1(0x00000ca0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000cc0U), 0xA000001EU, \
++        SM_CFG_W1(0x00000ce0U), 0xA00000A9U, \
++        SM_CFG_W1(0x00000d00U), 0xA00000A9U, \
++        SM_CFG_W1(0x00000d20U), 0xA00000ACU, \
++        SM_CFG_W1(0x00000d40U), 0xA00000ACU, \
++        SM_CFG_W1(0x00000d60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000d80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000da0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000dc0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000de0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000e00U), 0xA0000053U, \
+         SM_CFG_C1(0x00000000U), 0x0000C001U, \
+         SM_CFG_END \
+     }
+@@ -604,32 +604,32 @@
+ /*! Config for TRDC N */
+ #define SM_TRDC_N_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0x90008003U, \
+-        SM_CFG_W1(0x00000804U), 0x90008003U, \
+-        SM_CFG_W1(0x00000808U), 0x90008003U, \
+-        SM_CFG_W1(0x0000080cU), 0x90008003U, \
+-        SM_CFG_W1(0x00000810U), 0x90008003U, \
+-        SM_CFG_W1(0x00000814U), 0x90008003U, \
+-        SM_CFG_W1(0x00000820U), 0x90008003U, \
+-        SM_CFG_W1(0x00000824U), 0x90008003U, \
+-        SM_CFG_W1(0x00000828U), 0x90008003U, \
+-        SM_CFG_W1(0x0000082cU), 0x90008003U, \
+-        SM_CFG_W1(0x00000830U), 0x90008003U, \
+-        SM_CFG_W1(0x00000834U), 0x90008003U, \
+-        SM_CFG_W1(0x00000840U), 0x90008003U, \
+-        SM_CFG_W1(0x00000844U), 0x90008003U, \
+-        SM_CFG_W1(0x00000848U), 0x90008003U, \
+-        SM_CFG_W1(0x0000084cU), 0x90008003U, \
+-        SM_CFG_W1(0x00000850U), 0x90008003U, \
+-        SM_CFG_W1(0x00000854U), 0x90008003U, \
+-        SM_CFG_W1(0x00000860U), 0x90008003U, \
+-        SM_CFG_W1(0x00000864U), 0x90008003U, \
+-        SM_CFG_W1(0x00000868U), 0x90008003U, \
+-        SM_CFG_W1(0x0000086cU), 0x90008003U, \
+-        SM_CFG_W1(0x00000870U), 0x90008003U, \
+-        SM_CFG_W1(0x00000874U), 0x90008003U, \
+-        SM_CFG_W1(0x00000880U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008a0U), 0xB0000053U, \
++        SM_CFG_W1(0x00000800U), 0x80008003U, \
++        SM_CFG_W1(0x00000804U), 0x80008003U, \
++        SM_CFG_W1(0x00000808U), 0x80008003U, \
++        SM_CFG_W1(0x0000080cU), 0x80008003U, \
++        SM_CFG_W1(0x00000810U), 0x80008003U, \
++        SM_CFG_W1(0x00000814U), 0x80008003U, \
++        SM_CFG_W1(0x00000820U), 0x80008003U, \
++        SM_CFG_W1(0x00000824U), 0x80008003U, \
++        SM_CFG_W1(0x00000828U), 0x80008003U, \
++        SM_CFG_W1(0x0000082cU), 0x80008003U, \
++        SM_CFG_W1(0x00000830U), 0x80008003U, \
++        SM_CFG_W1(0x00000834U), 0x80008003U, \
++        SM_CFG_W1(0x00000840U), 0x80008003U, \
++        SM_CFG_W1(0x00000844U), 0x80008003U, \
++        SM_CFG_W1(0x00000848U), 0x80008003U, \
++        SM_CFG_W1(0x0000084cU), 0x80008003U, \
++        SM_CFG_W1(0x00000850U), 0x80008003U, \
++        SM_CFG_W1(0x00000854U), 0x80008003U, \
++        SM_CFG_W1(0x00000860U), 0x80008003U, \
++        SM_CFG_W1(0x00000864U), 0x80008003U, \
++        SM_CFG_W1(0x00000868U), 0x80008003U, \
++        SM_CFG_W1(0x0000086cU), 0x80008003U, \
++        SM_CFG_W1(0x00000870U), 0x80008003U, \
++        SM_CFG_W1(0x00000874U), 0x80008003U, \
++        SM_CFG_W1(0x00000880U), 0xA0000053U, \
++        SM_CFG_W1(0x000008a0U), 0xA0000053U, \
+         SM_CFG_W1(0x00010024U), 0x6666U, \
+         SM_CFG_W1(0x00010028U), 0x7777U, \
+         SM_CFG_W1(0x0001002cU), 0x6600U, \
+@@ -729,10 +729,10 @@
+         SM_CFG_W1(0x00014788U), 0x00AAAAAAU, \
+         SM_CFG_W1(0x000147a8U), 0x99999999U, \
+         SM_CFG_W1(0x000147acU), 0x99999999U, \
+-        SM_CFG_W1(0x000147b0U), 0x00000999U, \
++        SM_CFG_W1(0x000147b0U), 0x00000099U, \
+         SM_CFG_W1(0x000147d0U), 0x99999999U, \
+         SM_CFG_W1(0x000147d4U), 0x99999999U, \
+-        SM_CFG_W1(0x000147d8U), 0x00000999U, \
++        SM_CFG_W1(0x000147d8U), 0x00000099U, \
+         SM_CFG_Z1(0x00014840U), \
+         SM_CFG_Z1(0x00014844U), \
+         SM_CFG_Z1(0x00014848U), \
+@@ -765,10 +765,10 @@
+         SM_CFG_W1(0x00015388U), 0x00999999U, \
+         SM_CFG_W1(0x000153a8U), 0x99999999U, \
+         SM_CFG_W1(0x000153acU), 0x99999999U, \
+-        SM_CFG_W1(0x000153b0U), 0x00000999U, \
++        SM_CFG_W1(0x000153b0U), 0x00000099U, \
+         SM_CFG_W1(0x000153d0U), 0x99999999U, \
+         SM_CFG_W1(0x000153d4U), 0x99999999U, \
+-        SM_CFG_W1(0x000153d8U), 0x00000999U, \
++        SM_CFG_W1(0x000153d8U), 0x00000099U, \
+         SM_CFG_Z1(0x00015440U), \
+         SM_CFG_Z1(0x00015444U), \
+         SM_CFG_Z1(0x00015448U), \
+@@ -938,9 +938,9 @@
+ /*! Config for TRDC S */
+ #define SM_TRDC_S_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0x9000000DU, \
+-        SM_CFG_W1(0x00000804U), 0x9000000DU, \
+-        SM_CFG_W1(0x00000808U), 0x9000000DU, \
++        SM_CFG_W1(0x00000800U), 0x8000000DU, \
++        SM_CFG_W1(0x00000804U), 0x8000000DU, \
++        SM_CFG_W1(0x00000808U), 0x8000000DU, \
+         SM_CFG_W1(0x00010024U), 0x6666U, \
+         SM_CFG_W1(0x00010028U), 0x7777U, \
+         SM_CFG_W1(0x00011240U), 0x99999999U, \
+@@ -1061,44 +1061,44 @@
+ /*! Config for TRDC W */
+ #define SM_TRDC_W_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0x90000004U, \
+-        SM_CFG_W1(0x00000820U), 0x9000000EU, \
+-        SM_CFG_W1(0x00000840U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000860U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000880U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000900U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000920U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000940U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000960U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000980U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000aa0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ac0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ae0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ba0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000bc0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000be0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c80U), 0x90000004U, \
+-        SM_CFG_W1(0x00000ca0U), 0x9000000EU, \
++        SM_CFG_W1(0x00000800U), 0x80000004U, \
++        SM_CFG_W1(0x00000820U), 0x8000000EU, \
++        SM_CFG_W1(0x00000840U), 0xA0000053U, \
++        SM_CFG_W1(0x00000860U), 0xA0000053U, \
++        SM_CFG_W1(0x00000880U), 0xA0000053U, \
++        SM_CFG_W1(0x000008a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000900U), 0xA0000053U, \
++        SM_CFG_W1(0x00000920U), 0xA0000053U, \
++        SM_CFG_W1(0x00000940U), 0xA0000053U, \
++        SM_CFG_W1(0x00000960U), 0xA0000053U, \
++        SM_CFG_W1(0x00000980U), 0xA0000053U, \
++        SM_CFG_W1(0x000009a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000aa0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ac0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ae0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ba0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000bc0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000be0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c80U), 0x80000004U, \
++        SM_CFG_W1(0x00000ca0U), 0x8000000EU, \
+         SM_CFG_W1(0x00010024U), 0x6666U, \
+         SM_CFG_W1(0x00010028U), 0x7777U, \
+         SM_CFG_W1(0x0001002cU), 0x6600U, \
+@@ -1515,40 +1515,40 @@
+ /*! Config for TRDC X */
+ #define SM_TRDC_X_CONFIG \
+     { \
+-        SM_CFG_W1(0x00000800U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000820U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000840U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000860U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000880U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000008e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000900U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000920U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000940U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000960U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000980U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009a0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009c0U), 0xB0000053U, \
+-        SM_CFG_W1(0x000009e0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000a80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000aa0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ac0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ae0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b20U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b40U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b60U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000b80U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000ba0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000bc0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000be0U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c00U), 0xB0000053U, \
+-        SM_CFG_W1(0x00000c20U), 0xB0000053U, \
++        SM_CFG_W1(0x00000800U), 0xA0000053U, \
++        SM_CFG_W1(0x00000820U), 0xA0000053U, \
++        SM_CFG_W1(0x00000840U), 0xA0000053U, \
++        SM_CFG_W1(0x00000860U), 0xA0000053U, \
++        SM_CFG_W1(0x00000880U), 0xA0000053U, \
++        SM_CFG_W1(0x000008a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000008e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000900U), 0xA0000053U, \
++        SM_CFG_W1(0x00000920U), 0xA0000053U, \
++        SM_CFG_W1(0x00000940U), 0xA0000053U, \
++        SM_CFG_W1(0x00000960U), 0xA0000053U, \
++        SM_CFG_W1(0x00000980U), 0xA0000053U, \
++        SM_CFG_W1(0x000009a0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009c0U), 0xA0000053U, \
++        SM_CFG_W1(0x000009e0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000a80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000aa0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ac0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ae0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b20U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b40U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b60U), 0xA0000053U, \
++        SM_CFG_W1(0x00000b80U), 0xA0000053U, \
++        SM_CFG_W1(0x00000ba0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000bc0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000be0U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c00U), 0xA0000053U, \
++        SM_CFG_W1(0x00000c20U), 0xA0000053U, \
+         SM_CFG_C1(0x00000000U), 0x0000C001U, \
+         SM_CFG_END \
+     }

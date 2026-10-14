@@ -5,6 +5,13 @@
 
 LATU_USE_CUSTOM_SRC ?= "1"
 
-IMX_OEI_SRC = "${@'git://git@bitbucket.sw.nxp.com/isp/imx-oei.git;protocol=ssh' if d.getVar('LATU_USE_CUSTOM_SRC') == '1'  else 'git://github.com/nxp-imx/imx-oei.git;protocol=https'}"
-SRCBRANCH = 'master'
-SRCREV    = "${AUTOREV}"
+# Always use GitHub upstream source.
+# When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
+IMX_OEI_SRC = "git://github.com/nxp-imx/imx-oei.git;protocol=https"
+SRCBRANCH = "master"
+SRCREV = "9aea3350e643da86081c9dfaf3a6e1a84a583bfd"
+
+# Prepend our layer's files/ so BitBake finds our patches before the base layer's files/.
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+SRC_URI:append = "${@' file://0001-Create-files-for-new-board-mx95-latu-dcscm-lp5x.patch' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ''}"

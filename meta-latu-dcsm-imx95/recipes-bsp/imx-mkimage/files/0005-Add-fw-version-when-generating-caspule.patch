@@ -1,0 +1,54 @@
+From b3af1f8f244d0698a4575156c699c438bc668971 Mon Sep 17 00:00:00 2001
+From: Peng Fan <peng.fan@nxp.com>
+Date: Wed, 29 Apr 2026 18:38:25 +0800
+Subject: [PATCH 13/24] Add fw-version when generating caspule
+
+System-ready IR test requires capsule fw version to be different
+with default fw version, so add a random version [26] means Year
+2026.
+
+Upstream-Status: Pending
+
+Signed-off-by: Peng Fan <peng.fan@nxp.com>
+---
+ iMX8M/soc.mak | 1 +
+ iMX93/soc.mak | 1 +
+ iMX95/soc.mak | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/iMX8M/soc.mak b/iMX8M/soc.mak
+index e7c762b..80d69a8 100644
+--- a/iMX8M/soc.mak
++++ b/iMX8M/soc.mak
+@@ -274,6 +274,7 @@ flash_evk_stmm_capsule: overlay flash_evk
+ 		--private-key CRT.key \
+ 		--certificate CRT.crt \
+ 		--index 1 --instance 0 \
++		--fw-version 26 \
+ 		capsule1.bin
+ 
+ flash_evk_stmm: flash_evk
+diff --git a/iMX93/soc.mak b/iMX93/soc.mak
+index 50fd1bb..ebe3d01 100644
+--- a/iMX93/soc.mak
++++ b/iMX93/soc.mak
+@@ -207,6 +207,7 @@ flash_singleboot_stmm_capsule: overlay flash_singleboot
+ 		--private-key CRT.key \
+ 		--certificate CRT.crt \
+ 		--index 1 --instance 0 \
++		--fw-version 26 \
+ 		capsule1.bin
+ 
+ flash_singleboot_stmm: flash_singleboot_stmm_capsule
+diff --git a/iMX95/soc.mak b/iMX95/soc.mak
+index 72725da..e1e3151 100644
+--- a/iMX95/soc.mak
++++ b/iMX95/soc.mak
+@@ -366,6 +366,7 @@ flash_lpboot_sm_all_stmm_capsule: overlay flash_lpboot_sm_all
+ 		--private-key CRT.key \
+ 		--certificate CRT.crt \
+ 		--index 1 --instance 0 \
++		--fw-version 26 \
+ 		capsule1.bin
+ endif
+ 

@@ -5,9 +5,11 @@
 
 LATU_USE_CUSTOM_SRC ?= "1"
 
-IMX_MKIMAGE_SRC = "${@'git://git@bitbucket.sw.nxp.com/isp/imx-mkimage-dcscm.git;protocol=ssh' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else 'git://github.com/nxp-imx/imx-mkimage.git;protocol=https'}"
-SRCBRANCH = "${@'lf-6.18.20_2.0.0' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else 'lf-6.18.2_1.0.0'}"
-SRCREV    = "${AUTOREV}"
+# Always use GitHub upstream source.
+# When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
+IMX_MKIMAGE_SRC = "git://github.com/nxp-imx/imx-mkimage.git;protocol=https"
+SRCBRANCH = "lf-6.18.2_1.0.0"
+SRCREV = "c0debd7c0b4a125bd3ca66bc68f1915882b2bb62"
 
 MKIMAGE_EXTRA_ARGS:append:latu-dcsm-imx95 = "${@ ' QSPI_HEADER=./scripts/fspi_header_MX66U1G45G' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ' QSPI_HEADER=./scripts/fspi_header_133'}"
 
@@ -20,14 +22,27 @@ MKIMAGE_EXTRA_ARGS:append:latu-dcsm-imx95 = "${@ ' QSPI_HEADER=./scripts/fspi_he
 #   fspi + flash_a55_flexspi  -> for SPI NOR flat image
 
 do_deploy:append:latu-dcsm-imx95() {
-    # Remove the cross-product flash.bin files that the base recipe
-    # builds (sd x flash_a55_flexspi) and (fspi x flash_a55).
-    # Only keep the correct matching pairs:
-    #   sd   + flash_a55          -> for WIC SD/eMMC image
-    #   fspi + flash_a55_flexspi  -> for SPI NOR flat image
     rm -f "${DEPLOYDIR}/imx-boot${BOOT_VARIANT}-${MACHINE}-sd.bin-flash_a55_flexspi"
     rm -f "${DEPLOYDIR}/imx-boot${BOOT_VARIANT}-${MACHINE}-fspi.bin-flash_a55"
-    # Update the imx-boot symlink to point to the SD variant for WIC image use
     ln -sf "imx-boot${BOOT_VARIANT}-${MACHINE}-sd.bin-flash_a55" \
            "${DEPLOYDIR}/imx-boot"
 }
+
+# Prepend our layer's files/ so BitBake finds our patches before the base layer's files/.
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+SRC_URI:append = "${@' \
+    file://0001-iMX94-Update-fast-hash-support-for-A1.patch \
+    file://0002-iMX94-Add-XSPI-FCB-copy-image.patch \
+    file://0003-Handler-i.MX94-A0-A1.patch \
+    file://0004-iMX9x-Set-OEI-to-be-enabled-by-default.patch \
+    file://0005-Add-fw-version-when-generating-caspule.patch \
+    file://0006-LF-18073-iMX94-Add-flash_all_no_m33s-target.patch \
+    file://0007-imx95-defautl-yaml.patch \
+    file://0008-Add-fcb.yaml-changes-for-LATU_DCSM.patch \
+    file://0009-Add-iMX943-deafult-Yaml.patch \
+    file://0010-Changes-for-AntMicro-board.patch \
+    file://0011-Adds-fspi-header-file-for-LATU-Nor-flash.patch \
+    file://0012-Adds-fspi-header-file-for-AntMicro-Nor-flash.patch \
+    file://0013-Fix-iMX943-fspi-header.patch \
+    file://0014-Fix-LATU-iMX95-fspi-header.patch' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ''}"

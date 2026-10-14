@@ -1,0 +1,207 @@
+From 13773358611012555c0f41720f0a01e6822424eb Mon Sep 17 00:00:00 2001
+From: Arpit Goel <nxg05174@lsv031700.swis.in-blr01.nxp.com>
+Date: Mon, 24 Aug 2026 12:27:30 +0530
+Subject: [PATCH 18/24] Add fcb.yaml changes for LATU_DCSM
+
+Upstream-Status: Pending
+
+Signed-off-by: Arpit Goel <nxg05174@lsv031700.swis.in-blr01.nxp.com>
+---
+ fcb_parsed.yaml | 86 ++++++++++++++++++++++++++++---------------------
+ 1 file changed, 49 insertions(+), 37 deletions(-)
+
+diff --git a/fcb_parsed.yaml b/fcb_parsed.yaml
+index bf197c1..751dc8e 100644
+--- a/fcb_parsed.yaml
++++ b/fcb_parsed.yaml
+@@ -36,7 +36,7 @@ fcb_settings:
+     major: '0x01'
+   # --------------------------------------===== readSampleClkSrc [Optional] =====---------------------------------------
+   # Description: Offset: 0x0000000C, Width: 8b;  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
+-  readSampleClkSrc: '0x03'
++  readSampleClkSrc: '0x01'
+   # -----------------------------------------===== csHoldTime [Optional] =====------------------------------------------
+   # Description: Offset: 0x0000000D, Width: 8b;  [0x00d-0x00d] CS hold time, default value: 3
+   csHoldTime: '0x03'
+@@ -54,7 +54,7 @@ fcb_settings:
+   # ---------------------------------------===== deviceModeType [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000011, Width: 8b;  [0x011-0x011] Specify the configuration command type: 0 - Generic, 1 -
+   # Quad Enable, 2 - SPI-to-xSPI, 3 - xSPI-to-SPI
+-  deviceModeType: '0x00'
++  deviceModeType: '0x01'
+   # -------------------------------------===== waitTimeCfgCommands [Optional] =====-------------------------------------
+   # Description: Offset: 0x00000012, Width: 16b;  [0x012-0x013] Wait time for all configuration commands, unit: 100us,
+   # Used for DPI/QPI/OPI switch or reset command
+@@ -72,7 +72,7 @@ fcb_settings:
+   # ----------------------------------------===== deviceModeArg [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000018, Width: 32b;  [0x018-0x01b] Argument/Parameter for device configuration. effective
+   # only when deviceModeCfgEnable = 1
+-  deviceModeArg: '0x000000E7'
++  deviceModeArg: '0x00000040'
+   # ---------------------------------------===== configCmdEnable [Optional] =====---------------------------------------
+   # Description: Offset: 0x0000001C, Width: 8b;  [0x01c-0x01c] Configure command Enable Flag, 1 - Enable, 0 - Disable
+   configCmdEnable: '0x00'
+@@ -118,25 +118,25 @@ fcb_settings:
+   # ------------------------------------===== controllerMiscOption [Optional] =====-------------------------------------
+   # Description: Offset: 0x00000040, Width: 32b;  [0x040-0x043] Controller Misc Options, see Misc feature bit
+   # definitions for more details
+-  controllerMiscOption: '0x00000050'
++  controllerMiscOption: '0x00000010'
+   # -----------------------------------------===== deviceType [Optional] =====------------------------------------------
+   # Description: Offset: 0x00000044, Width: 8b;  [0x044-0x044] Device Type:  See Flash Type Definition for more details
+   deviceType: '0x01'
+   # ----------------------------------------===== sflashPadType [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000045, Width: 8b;  [0x045-0x045] Serial Flash Pad Type: 1 - Single, 2 - Dual, 4 - Quad, 8
+   # - Octal
+-  sflashPadType: '0x08'
++  sflashPadType: '0x04'
+   # ----------------------------------------===== serialClkFreq [Optional] =====----------------------------------------
+   # Description: Offset: 0x00000046, Width: 8b;  [0x046-0x046] Serial Flash Frequency, device specific definitions, See
+   # System Boot Chapter for more details
+-  serialClkFreq: '0x08'
++  serialClkFreq: '0x05'
+   # -------------------------------------===== lutCustomSeqEnable [Optional] =====--------------------------------------
+   # Description: Offset: 0x00000047, Width: 8b;  [0x047-0x047] LUT customization Enable, it is required if the
+   # program/erase cannot be done using 1 LUT sequence, currently, only applicable to HyperFLASH
+   lutCustomSeqEnable: '0x00'
+   # ----------------------------------------===== sflashA1Size [Optional] =====-----------------------------------------
+   # Description: Offset: 0x00000050, Width: 32b;  [0x050-0x053] Size of Flash connected to A1
+-  sflashA1Size: '0x10000000'
++  sflashA1Size: '0x08000000'
+   # ----------------------------------------===== sflashA2Size [Optional] =====-----------------------------------------
+   # Description: Offset: 0x00000054, Width: 32b;  [0x054-0x057] Size of Flash connected to A2
+   sflashA2Size: '0x00000000'
+@@ -198,7 +198,7 @@ fcb_settings:
+   lookupTable_seq0_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: '0xFD'
++    OPERAND: '0xEB'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -206,7 +206,7 @@ fcb_settings:
+     # - 4PAD, (2): Quad mode. Four pads are used.
+     # - 8PAD, (3): Octal mode. Eight pads are used.
+     # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+-    NUM_PADS: 8PAD
++    NUM_PADS: 1PAD
+     # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+     # Description: Offset: 10b, Width: 6b, Instruction operation code.
+     # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+@@ -252,23 +252,28 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+-    OPERATION_CODE: CMD_DDR
++    # Seq 0: Fast Read Quad I/O (1-4-4) for MX66U1G45G QSPI
++    # instr0: CMD 0xEB on 1 wire (SDR)
++    OPERATION_CODE: CMD_SDR
+   lookupTable_seq0_instr1:
+-    OPERAND: '0xFD'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: CMD_DDR
++    # instr1: 24-bit address on 4 wires (SDR)
++    OPERAND: '0x18'
++    NUM_PADS: 4PAD
++    OPERATION_CODE: RADDR_SDR
+   lookupTable_seq0_instr2:
+-    OPERAND: '0x20'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: RADDR_DDR
++    # instr2: 6 dummy clocks on 4 wires (SDR) - required at 100 MHz per MX66U1G45G datasheet
++    OPERAND: '0x06'
++    NUM_PADS: 4PAD
++    OPERATION_CODE: DUMMY_SDR
+   lookupTable_seq0_instr3:
+-    OPERAND: '0x20'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: DUMMY_DDR
+-  lookupTable_seq0_instr4:
++    # instr3: read data on 4 wires (SDR)
+     OPERAND: '0x04'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: READ_DDR
++    NUM_PADS: 4PAD
++    OPERATION_CODE: READ_SDR
++  lookupTable_seq0_instr4:
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq0_instr5:
+     OPERAND: '0x00'
+     NUM_PADS: 1PAD
+@@ -294,7 +299,7 @@ fcb_settings:
+     # - 4PAD, (2): Quad mode. Four pads are used.
+     # - 8PAD, (3): Octal mode. Eight pads are used.
+     # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+-    NUM_PADS: 8PAD
++    NUM_PADS: 1PAD
+     # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+     # Description: Offset: 10b, Width: 6b, Instruction operation code.
+     # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+@@ -340,19 +345,22 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+-    OPERATION_CODE: CMD_DDR
++    # Seq 1: Read Status Register (RDSR) for MX66U1G45G QSPI
++    # instr0: CMD 0x05 on 1 wire (SDR)
++    OPERATION_CODE: CMD_SDR
+   lookupTable_seq1_instr1:
+-    OPERAND: '0x05'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: CMD_DDR
++    # instr1: read 1 byte of status on 1 wire (SDR)
++    OPERAND: '0x01'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: READ_SDR
+   lookupTable_seq1_instr2:
+-    OPERAND: '0x20'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: DUMMY_DDR
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq1_instr3:
+     OPERAND: '0x00'
+-    NUM_PADS: 8PAD
+-    OPERATION_CODE: READ_DDR
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq1_instr4:
+     OPERAND: '0x00'
+     NUM_PADS: 1PAD
+@@ -550,7 +558,7 @@ fcb_settings:
+   lookupTable_seq4_instr0:
+     # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+     # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+-    OPERAND: '0x81'
++    OPERAND: '0x01'
+     # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+     # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+     # - 1PAD, (0): Single mode. One pad is used.
+@@ -604,15 +612,19 @@ fcb_settings:
+     # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+     # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+     # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
++    # Seq 4: Write Status Register (WRSR) to set QE bit for MX66U1G45G QSPI
++    # Used by deviceModeSeq (seqId=4) with deviceModeArg=0x40 to enable Quad Enable (SR1[6])
++    # instr0: CMD 0x01 (WRSR) on 1 wire (SDR)
+     OPERATION_CODE: CMD_SDR
+   lookupTable_seq4_instr1:
+-    OPERAND: '0x18'
+-    NUM_PADS: 1PAD
+-    OPERATION_CODE: RADDR_SDR
+-  lookupTable_seq4_instr2:
++    # instr1: write 1 byte (the QE value 0x40 comes from deviceModeArg) on 1 wire (SDR)
+     OPERAND: '0x01'
+     NUM_PADS: 1PAD
+     OPERATION_CODE: WRITE_SDR
++  lookupTable_seq4_instr2:
++    OPERAND: '0x00'
++    NUM_PADS: 1PAD
++    OPERATION_CODE: STOP
+   lookupTable_seq4_instr3:
+     OPERAND: '0x00'
+     NUM_PADS: 1PAD

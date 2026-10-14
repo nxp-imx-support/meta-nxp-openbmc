@@ -1,0 +1,53 @@
+From 116772dd60f4f0942eec3f514c23555b13b2185f Mon Sep 17 00:00:00 2001
+From: Nitin Garg <nitin.garg_3@nxp.com>
+Date: Wed, 15 Apr 2026 12:23:40 -0500
+Subject: [PATCH 12/24] iMX9x: Set OEI to be enabled by default
+
+Upstream-Status: Pending
+
+Signed-off-by: Nitin Garg <nitin.garg_3@nxp.com>
+---
+ iMX94/soc.mak  | 2 +-
+ iMX95/soc.mak  | 2 +-
+ iMX952/soc.mak | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/iMX94/soc.mak b/iMX94/soc.mak
+index 257ed7b..1321be8 100644
+--- a/iMX94/soc.mak
++++ b/iMX94/soc.mak
+@@ -2,7 +2,7 @@ MKIMG = ../mkimage_imx8
+ 
+ CC ?= gcc
+ REV ?= A0
+-OEI ?= NO
++OEI ?= YES
+ MSEL ?= 0
+ CFLAGS ?= -O2 -Wall -std=c99
+ INCLUDE = ./lib
+diff --git a/iMX95/soc.mak b/iMX95/soc.mak
+index 326746d..72725da 100644
+--- a/iMX95/soc.mak
++++ b/iMX95/soc.mak
+@@ -2,7 +2,7 @@ MKIMG = ../mkimage_imx8
+ 
+ CC ?= gcc
+ REV ?= B0
+-OEI ?= NO
++OEI ?= YES
+ MSEL ?= 0
+ CFLAGS ?= -O2 -Wall -std=c99
+ INCLUDE = ./lib
+diff --git a/iMX952/soc.mak b/iMX952/soc.mak
+index 5313f5f..4316962 100644
+--- a/iMX952/soc.mak
++++ b/iMX952/soc.mak
+@@ -2,7 +2,7 @@ MKIMG = ../mkimage_imx8
+ 
+ CC ?= gcc
+ REV ?= A0
+-OEI ?= NO
++OEI ?= YES
+ MSEL ?= 0
+ CFLAGS ?= -O2 -Wall -std=c99
+ INCLUDE = ./lib

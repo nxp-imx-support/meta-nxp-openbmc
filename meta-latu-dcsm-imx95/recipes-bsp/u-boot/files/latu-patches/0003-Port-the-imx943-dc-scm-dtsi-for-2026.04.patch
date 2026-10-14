@@ -1,0 +1,567 @@
+From 976d0b0233040f1511b2eba853fd798f5aa9fbfc Mon Sep 17 00:00:00 2001
+From: Disha Das <disha.das@nxp.com>
+Date: Tue, 13 Oct 2026 10:58:18 +0000
+Subject: [PATCH] Port the imx943-dc-scm dtsi for 2026.04
+
+Upstream-Status: Pending
+
+Signed-off-by: Nikhil Gupta <nikhil.gupta_2@nxp.com>
+---
+ arch/arm/dts/imx943-dc-scm-u-boot.dtsi | 386 +++++++++++++------------
+ arch/arm/dts/imx943-dc-scm.dts         |  76 ++---
+ 2 files changed, 243 insertions(+), 219 deletions(-)
+
+diff --git a/arch/arm/dts/imx943-dc-scm-u-boot.dtsi b/arch/arm/dts/imx943-dc-scm-u-boot.dtsi
+index 14f92659..eab4d889 100644
+--- a/arch/arm/dts/imx943-dc-scm-u-boot.dtsi
++++ b/arch/arm/dts/imx943-dc-scm-u-boot.dtsi
+@@ -3,229 +3,253 @@
+  * Copyright 2025 NXP
+  */
+ 
+-&aips1 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&aips2 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&aips3 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&clk_ext1 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&dispmix_csr {
+-	/delete-property/ assigned-clocks;
+-	/delete-property/ assigned-clock-rates;
+-	/delete-property/ assigned-clock-parents;
+-};
+-
+-&dummy {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&elemu1 {
+-	compatible = "fsl,imx93-mu-s4";
+-	bootph-all;
+-	bootph-pre-ram;
+-	status = "okay";
+-};
+-
+-&elemu3 {
+-	compatible = "fsl,imx93-mu-s4";
+-	bootph-all;
+-	bootph-pre-ram;
+-	status = "okay";
+-};
+-
+-&gpio2 {
+-	reg = <0 0x43810000 0 0x1000>, <0 0x43810040 0 0x40>;
+-	bootph-pre-ram;
+-};
+-
+-&gpio3 {
+-	reg = <0 0x43820000 0 0x1000>, <0 0x43820040 0 0x40>;
+-	bootph-pre-ram;
+-};
+-
+-&gpio4 {
+-	reg = <0 0x43840000 0 0x1000>, <0 0x43840040 0 0x40>;
+-	bootph-pre-ram;
+-};
+-
+-&gpio5 {
+-	reg = <0 0x43850000 0 0x1000>, <0 0x43850040 0 0x40>;
+-	bootph-pre-ram;
+-};
+-
+-&gpio6 {
+-	reg = <0 0x43860000 0 0x1000>, <0 0x43860040 0 0x40>;
+-	bootph-pre-ram;
+-};
+-
+-&gpio7 {
+-	reg = <0 0x43870000 0 0x1000>, <0 0x43870040 0 0x40>;
+-	bootph-pre-ram;
++#include "imx943-u-boot.dtsi"
++
++/ {
++	aliases {
++		gpio1 = &gpio2;
++		gpio2 = &gpio3;
++		gpio3 = &gpio4;
++		gpio4 = &gpio5;
++		gpio5 = &gpio6;
++		gpio6 = &gpio7;
++		serial0 = &lpuart1;
++		ethernet0 = &enetc0;
++		usb0 = &usb3_dwc3;
++		usb1 = &usb2;
++		usb_gadget0 = &usb3_dwc3;
++		usb_gadget1 = &usbg2;
++	};
++
++	usbg2: usbg2 {
++		compatible = "fsl,imx27-usb-gadget";
++		dr_mode = "peripheral";
++		chipidea,usb = <&usb2>;
++		status = "okay";
++	};
++
++	chosen {
++		bootargs = "console=ttyLP0,115200 earlycon";
++	};
++
++	reg_gpy_en: regulator-gpy-en {
++		compatible = "regulator-fixed";
++		regulator-name = "gpy-en";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++    regulator-always-on;
++    regulator-boot-on;  
++	};
++
++	xtal25m: clock-xtal25m {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <25000000>;
++		clock-output-names = "xtal_25MHz";
++	};
++
++	cm70: imx943-cm70 {
++		compatible = "fsl,imx94-cm70";
++	};
++
++	cm71: imx943-cm71 {
++		compatible = "fsl,imx94-cm71";
++	};
++
++	cm33s: imx943-cm33s {
++		compatible = "fsl,imx94-cm33s";
++	};
++};
++
++&pcal6416_i2c6_u44 {
++	/* Switch-port2/ENET0 IOMUX selection */
++	switch-port2-sel-hog {
++		gpio-hog;
++		gpios = <2 GPIO_ACTIVE_HIGH>;
++		output-high;
++	};
++
++	/* ENET1 IOMUX selection */
++	enetc1-sel-hog {
++		gpio-hog;
++		gpios = <3 GPIO_ACTIVE_HIGH>;
++		output-high;
++	};
++
++	/* ENET2 IOMUX selection */
++	enetc2-sel-hog {
++		gpio-hog;
++		gpios = <4 GPIO_ACTIVE_HIGH>;
++		output-high;
++	};
+ };
+ 
+ &lpuart1 {
+ 	bootph-pre-ram;
+ };
+ 
+-&mu2 {
+-	bootph-all;
+-	bootph-pre-ram;
++&lpi2c6 {
++    bootph-pre-ram;
+ };
+ 
+-&osc_24m {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
++&pca9544_i2c6 { bootph-pre-ram; };
+ 
+-&pinctrl_reg_usdhc2_vmmc {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_uart1 {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc1_100mhz {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc1_200mhz {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc1 {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc2 {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc2_100mhz {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc2_200mhz {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_usdhc2_gpio {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_xspi1 {
+-	bootph-pre-ram;
+-};
+-
+-&reg_usdhc2_vmmc {
+-	bootph-pre-ram;
+-};
+-
+-&scmi_buf0 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&scmi_buf1 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&sram0 {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
++&pcal6416_i2c6_u44 { bootph-pre-ram; };
+ 
+ &usb2 {
+-	compatible = "fsl,imx8mm-usb", "fsl,imx7d-usb";
+-	/delete-property/power-domains;
+-};
+-
+-&usb3_phy {
+-	bootph-pre-ram;
++	dr_mode = "host";
++	hnp-disable;
++	srp-disable;
++	adp-disable;
++	disable-over-current;
++	status = "okay";
+ };
+ 
+ &usb3 {
+-	clocks = <&scmi_clk IMX94_CLK_HSIO>,
+-		 <&scmi_clk IMX94_CLK_24M>,
+-		 <&scmi_clk IMX94_CLK_32K>;
+-	clock-names = "hsio", "ref", "suspend";
+-
+-	/delete-property/power-domains;
+ 	bootph-pre-ram;
++
++	status = "okay";
+ };
+ 
+ &usb3_dwc3 {
+ 	bootph-pre-ram;
++	dr_mode = "otg";
++	hnp-disable;
++	srp-disable;
++	adp-disable;
++	usb-role-switch;
++	role-switch-default-mode = "peripheral";
++	snps,dis-u1-entry-quirk;
++	snps,dis-u2-entry-quirk;
++	status = "okay";
+ };
+ 
+-&usdhc1 {
++&usb3_phy {
+ 	bootph-pre-ram;
++	orientation-switch;
++	status = "okay";
+ };
+ 
+-&usdhc2 {
+-	bootph-pre-ram;
++&netc_blk_ctrl {
++	assigned-clocks = <&scmi_clk IMX94_CLK_MAC2>,
++        <&scmi_clk IMX94_CLK_MAC3>,
++			  <&scmi_clk IMX94_CLK_MAC4>,
++			  <&scmi_clk IMX94_CLK_MAC5>;
++	assigned-clock-parents = <&scmi_clk IMX94_CLK_SYSPLL1_PFD0>,
++         <&scmi_clk IMX94_CLK_SYSPLL1_PFD0>,
++				 <&scmi_clk IMX94_CLK_SYSPLL1_PFD0>,
++				 <&scmi_clk IMX94_CLK_SYSPLL1_PFD0>;
++	assigned-clock-rates = <250000000>, <250000000>, <250000000>, <250000000>;
++	status = "okay";
+ };
+ 
+-&xspi1 {
+-	bootph-pre-ram;
++&enetc0 {
++	clocks = <&scmi_clk IMX94_CLK_MAC3>;
++	clock-names = "enet_ref_clk";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_eth2>;
++	phy-handle = <&ethphy4>;
++	phy-mode = "rgmii-id";
++	status = "okay";
+ };
+ 
+-&mt35xu02g {
+-	bootph-pre-ram;
+-};
++&netc_emdio {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_emdio>;
++	phy-supply = <&reg_gpy_en>;
++	status = "okay";
+ 
+-&{/firmware} {
+-	bootph-all;
+-	bootph-pre-ram;
++	ethphy4: ethernet-phy@5 {
++		reg = <0x5>;
++		realtek,clkout-disable;
++	};
+ };
+ 
+-&{/firmware/scmi} {
+-	bootph-all;
+-	bootph-pre-ram;
++&wdog3 {
++	status = "disabled";
+ };
+ 
+-&{/firmware/scmi/protocol@11} {
+-	bootph-all;
++&xspi1 {
+ 	bootph-pre-ram;
+-};
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_xspi1>;
++	nxp,xspi-env = <0>;
++	nxp,xspi-gmid;
++	status = "okay";
+ 
+-&{/firmware/scmi/protocol@13} {
+-	bootph-all;
+-	bootph-pre-ram;
++	mt35xu2g: flash@0 {
++		bootph-pre-ram;
++		reg = <0>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "jedec,spi-nor";
++		spi-max-frequency = <133000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++	};
++};
++
++&scmi_iomuxc {
++	pinctrl_eth3: eth3grp {
++		fsl,pins = <
++			IMX94_PAD_ETH3_TXD3__NETC_PINMUX_ETH3_TXD3		0x57e
++			IMX94_PAD_ETH3_TXD2__NETC_PINMUX_ETH3_TXD2		0x57e
++			IMX94_PAD_ETH3_TXD1__NETC_PINMUX_ETH3_TXD1		0x57e
++			IMX94_PAD_ETH3_TXD0__NETC_PINMUX_ETH3_TXD0		0x57e
++			IMX94_PAD_ETH3_TX_CTL__NETC_PINMUX_ETH3_TX_CTL		0x57e
++			IMX94_PAD_ETH3_TX_CLK__NETC_PINMUX_ETH3_TX_CLK		0x5fe
++			IMX94_PAD_ETH3_RX_CTL__NETC_PINMUX_ETH3_RX_CTL		0x57e
++			IMX94_PAD_ETH3_RX_CLK__NETC_PINMUX_ETH3_RX_CLK		0x5fe
++			IMX94_PAD_ETH3_RXD0__NETC_PINMUX_ETH3_RXD0		0x57e
++			IMX94_PAD_ETH3_RXD1__NETC_PINMUX_ETH3_RXD1		0x57e
++			IMX94_PAD_ETH3_RXD2__NETC_PINMUX_ETH3_RXD2		0x57e
++			IMX94_PAD_ETH3_RXD3__NETC_PINMUX_ETH3_RXD3		0x57e
++		>;
++	};
++
++	pinctrl_eth4: eth4grp {
++		fsl,pins = <
++			IMX94_PAD_ETH4_TXD3__NETC_PINMUX_ETH4_TXD3		0x57e
++			IMX94_PAD_ETH4_TXD2__NETC_PINMUX_ETH4_TXD2		0x57e
++			IMX94_PAD_ETH4_TXD1__NETC_PINMUX_ETH4_TXD1		0x57e
++			IMX94_PAD_ETH4_TXD0__NETC_PINMUX_ETH4_TXD0		0x57e
++			IMX94_PAD_ETH4_TX_CTL__NETC_PINMUX_ETH4_TX_CTL		0x57e
++			IMX94_PAD_ETH4_TX_CLK__NETC_PINMUX_ETH4_TX_CLK		0x5fe
++			IMX94_PAD_ETH4_RX_CTL__NETC_PINMUX_ETH4_RX_CTL		0x57e
++			IMX94_PAD_ETH4_RX_CLK__NETC_PINMUX_ETH4_RX_CLK		0x5fe
++			IMX94_PAD_ETH4_RXD0__NETC_PINMUX_ETH4_RXD0		0x57e
++			IMX94_PAD_ETH4_RXD1__NETC_PINMUX_ETH4_RXD1		0x57e
++			IMX94_PAD_ETH4_RXD2__NETC_PINMUX_ETH4_RXD2		0x57e
++			IMX94_PAD_ETH4_RXD3__NETC_PINMUX_ETH4_RXD3		0x57e
++		>;
++	};
++
++	pinctrl_xspi1: xspi1grp {
++		fsl,pins = <
++			IMX94_PAD_XSPI1_SCLK__XSPI1_A_SCLK	0x3fe
++			IMX94_PAD_XSPI1_SS0_B__XSPI1_A_SS0_B	0x3fe
++			IMX94_PAD_XSPI1_DATA0__XSPI1_A_DATA0	0x3fe
++			IMX94_PAD_XSPI1_DATA1__XSPI1_A_DATA1	0x3fe
++			IMX94_PAD_XSPI1_DATA2__XSPI1_A_DATA2	0x3fe
++			IMX94_PAD_XSPI1_DATA3__XSPI1_A_DATA3	0x3fe
++			IMX94_PAD_XSPI1_DATA4__XSPI1_A_DATA4	0x3fe
++			IMX94_PAD_XSPI1_DATA5__XSPI1_A_DATA5	0x3fe
++			IMX94_PAD_XSPI1_DATA6__XSPI1_A_DATA6	0x3fe
++			IMX94_PAD_XSPI1_DATA7__XSPI1_A_DATA7	0x3fe
++			IMX94_PAD_XSPI1_DQS__XSPI1_A_DQS	0x3fe
++		>;
++	};
+ };
+ 
+-&{/firmware/scmi/protocol@14} {
+-	bootph-all;
++&pinctrl_uart1 {
+ 	bootph-pre-ram;
+ };
+ 
+-&{/firmware/scmi/protocol@15} {
+-	bootph-all;
++&pinctrl_lpi2c6 {
++    bootph-pre-ram;
+ };
+ 
+-&{/firmware/scmi/protocol@19} {
+-	bootph-all;
+-	bootph-pre-ram;
+-};
+-
+-&{/soc} {
+-	bootph-all;
++&pinctrl_xspi1 {
+ 	bootph-pre-ram;
+ };
+ 
+diff --git a/arch/arm/dts/imx943-dc-scm.dts b/arch/arm/dts/imx943-dc-scm.dts
+index 54dc6bb3..4ecd46d5 100644
+--- a/arch/arm/dts/imx943-dc-scm.dts
++++ b/arch/arm/dts/imx943-dc-scm.dts
+@@ -5,7 +5,8 @@
+ 
+ /dts-v1/;
+ 
+-#include "imx943.dtsi"
++#include "../dts/upstream/src/arm64/freescale/imx943.dtsi"
++#include "imx943-u-boot.dtsi"
+ #include <dt-bindings/usb/pd.h>
+ 
+ / {
+@@ -130,25 +131,6 @@
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <3>;
+-
+-			lvds_to_hdmi: bridge@4c {
+-				compatible = "ite,it6263";
+-				reg = <0x4c>;
+-				reset-gpios = <&pcal6416_i2c3_u171 8 GPIO_ACTIVE_HIGH>;
+-
+-				ports {
+-					#address-cells = <1>;
+-					#size-cells = <0>;
+-
+-					port@0 {
+-						reg = <0>;
+-
+-						it6263_in: endpoint {
+-							remote-endpoint = <&lvds_out>;
+-						};
+-					};
+-				};
+-			};
+ 		};
+ 
+ 		i2c@4 {
+@@ -250,7 +232,7 @@
+ 				interrupts = <13 IRQ_TYPE_LEVEL_LOW>;
+ 			};
+ 		};
+-	};
++  };
+ };
+ 
+ &lpi2c4 {
+@@ -342,22 +324,41 @@
+ 					output-high;
+ 				};
+ 
+-				/* ENET1 IOMUX selection */
+-				enetc1-sel-hog {
+-					gpio-hog;
+-					gpios = <3 GPIO_ACTIVE_HIGH>;
+-					output-high;
+-				};
+-
+-				/* ENET2 IOMUX selection */
+-				enetc2-sel-hog {
+-					gpio-hog;
+-					gpios = <4 GPIO_ACTIVE_HIGH>;
+-					output-high;
+-				};
+-			};
+-		};
+-	};
++        /* ENET1 IOMUX selection */
++        enetc1-sel-hog {
++          gpio-hog;
++          gpios = <3 GPIO_ACTIVE_HIGH>;
++          output-high;
++        };
++
++        /* ENET2 IOMUX selection */
++        enetc2-sel-hog {
++          gpio-hog;
++          gpios = <4 GPIO_ACTIVE_HIGH>;
++          output-high;
++        };
++      };
++    };
++  };
++
++  lvds-to-hdmi-bridge@4c {
++    compatible = "ite,it6263";
++    reg = <0x4c>;
++    reset-gpios = <&gpio2 18 GPIO_ACTIVE_LOW>;
++
++    ports {
++      #address-cells = <1>;
++      #size-cells = <0>;
++
++      port@0 {
++        reg = <0>;
++
++        it6263_in: endpoint {
++          remote-endpoint = <&lvds_out>;
++        };
++      };
++    };
++  };
+ };
+ 
+ &lpi2c7 {
+@@ -393,7 +394,6 @@
+ 	status = "okay";
+ };
+ 
+-/* only enetc1 & enetc2 used in uboot */
+ &enetc0 {
+ 	clocks = <&scmi_clk IMX94_CLK_MAC3>;
+ 	clock-names = "enet_ref_clk";
