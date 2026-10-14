@@ -1,6 +1,6 @@
-FILESEXTRAPATHS:prepend:evb-imx943 := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend:evk-imx943 := "${THISDIR}/${PN}:"
 
-EXTRA_OEMESON:append:evb-imx943 = " -Dnegative-errno-on-fail=true"
+EXTRA_OEMESON:append:evk-imx943 = " -Dnegative-errno-on-fail=true"
 
 
 CHIPS = " \
@@ -13,4 +13,4 @@ ITEMS = "${@compose_list(d, 'ITEMSFMT', 'CHIPS')}"
 
 
 ENVS = "obmc/hwmon/{0}"
-SYSTEMD_ENVIRONMENT_FILE:${PN}:append:evb-imx943 = " ${@compose_list(d, 'ENVS', 'ITEMS')}"
+SYSTEMD_ENVIRONMENT_FILE:${PN}:append:evk-imx943 = " ${@compose_list(d, 'ENVS', 'ITEMS')}"

@@ -1,0 +1,86 @@
+# NXP imx943 example local.conf settings
+# This file is a convenience template and may be freely modified by the user
+
+MACHINE ??= "evk-imx943-am"
+DISTRO ?= "openbmc-phosphor"
+PACKAGE_CLASSES ?= "package_ipk"
+SANITY_TESTED_DISTROS:append ?= " *"
+EXTRA_IMAGE_FEATURES ?= "allow-root-login"
+IMAGE_INSTALL:append = " net-tools curl lmsensors phosphor-hwmon openipmi ipmitool dbus-sensors socat entity-manager"
+IMX_MIRROR ?= "https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/"
+
+
+# NXP Yocto mirror for source archives
+MIRRORS += " \
+${IMX_MIRROR}   http://download.ossystems.com.br/bsp/freescale/source/ \n \
+"
+FSL_MIRROR ?= "${IMX_MIRROR}"
+
+ACCEPT_FSL_EULA = "1"
+USER_CLASSES ?= "buildstats"
+PATCHRESOLVE = "noop"
+BB_DISKMON_DIRS ??= "\
+    STOPTASKS,${TMPDIR},1G,100K \
+    STOPTASKS,${DL_DIR},1G,100K \
+    STOPTASKS,${SSTATE_DIR},1G,100K \
+    STOPTASKS,/tmp,100M,100K \
+    HALT,${TMPDIR},100M,1K \
+    HALT,${DL_DIR},100M,1K \
+    HALT,${SSTATE_DIR},100M,1K \
+    HALT,/tmp,10M,1K"
+CONF_VERSION = "2"
+
+# NOTE: do not set UBOOT_CONFIG here.
+#
+# This file used to carry UBOOT_CONFIG = "fspi", which broke the build:
+# i.MX943 defines only the "sd" and "xspi" UBOOT_CONFIG flags (see
+# conf/machine/include/imx943-evk.inc), so "fspi" resolves to no defconfig,
+# imx-boot is skipped, and the image fails with
+#   ERROR: Nothing PROVIDES 'imx-boot'
+#   imx-boot was skipped: The selected UBOOT_CONFIG key fspi has no match
+#                         in dict_keys(['sd', 'xspi'])
+# "fspi" is the i.MX95 spelling of the serial-NOR config and does exist for
+# that SoC; on i.MX943 the equivalent is "xspi", which
+# conf/machine/evk-imx943-am.conf already appends itself. Leave the machine
+# conf in charge of it.
+
+# Changes for reducing rootfs.
+
+# Remove unwanted packages
+IMAGE_INSTALL:remove = "git python3 perl"
+
+# Remove debug features
+IMAGE_FEATURES:remove = "dbg-pkgs package-management"
+EXTRA_IMAGE_FEATURES:remove = "dbg-pkgs"
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+
+# Disable package manager
+EXTRA_IMAGE_FEATURES:remove = "package-management"
+
+# No locales
+IMAGE_LINGUAS = ""
+
+# Avoid recommended packages
+#BAD_RECOMMENDATIONS += " *-locale-* *-doc"
+NO_RECOMMENDATIONS = "1"
+
+# Kernel deps cleanup
+RDEPENDS:${KERNEL_PACKAGE_NAME}-base = ""
+
+# Strip settings
+INHIBIT_PACKAGE_STRIP = "0"
+INHIBIT_SYSROOT_STRIP = "0"
+
+KERNEL_IMAGETYPE = "uImage"
+KERNEL_IMAGETYPES += " Image.gz"
+
+IMAGE_INSTALL:append = " systemd-networkd"
+IMAGE_INSTALL:append = " kernel-module-stream2v4l2"
+
+DISTRO_FEATURES:append = " usrmerge"
+
+IMAGE_FSTYPES:append = " jffs2"
+FLASH_SIZE = "131072"
+FLASH_ROOTFS_TYPE = "jffs2"
+JFFS2_ENDIANNESS = "-l"
+JFFS2_ERASEBLOCK = "0x20000"

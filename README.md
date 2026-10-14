@@ -29,10 +29,10 @@ This repository includes NXP-specific sublayers:
 - `meta-common` (shared BSP content: meta-imx-bsp)
 - `meta-frdm-imx91` (machine config for i.MX91 FRDM board)
 - `meta-frdm-imx93` (machine config for i.MX93 FRDM board)
-- `meta-evb-imx943` (machine config for i.MX943 EVK board)
-- `meta-evb-imx943-am` (machine config for i.MX943 Antmicro DC-SCM board)
+- `meta-evk-imx943` (machine config for i.MX943 EVK board)
+- `meta-evk-imx943-am` (machine config for i.MX943 Antmicro DC-SCM board)
 - `meta-frdm-imx95` (machine config for i.MX95 15x15 FRDM board)
-- `meta-evb-imx95-evk` (machine config for i.MX95 19x19 EVK board)
+- `meta-evk-imx95` (machine config for i.MX95 19x19 EVK board)
 - `meta-imx91` (SoC-specific recipes for i.MX91)
 - `meta-imx93` (SoC-specific recipes for i.MX93)
 - `meta-imx943` (SoC-specific recipes for i.MX943)
@@ -108,22 +108,22 @@ Additional dependent components:
 |---|---|---|---|
 | `frdm-imx91` | i.MX91 | 11x11 FRDM | |
 | `frdm-imx93` | i.MX93 | 11x11 FRDM | |
-| `evk-imx93-nor` | i.MX93 | 11x11 EVK | NOR-flash (JFFS2) image variant. NOR boot is supported on the i.MX93 EVK board only (not FRDM). |
-| `evb-imx943` | i.MX943 | 15x15 EVK | |
-| `evb-imx943-am` | i.MX943 | Antmicro DC-SCM | |
+| `evk-imx93-nor` | i.MX93 | 11x11 EVK | NOR-flash (JFFS2) image variant. |
+| `evk-imx943` | i.MX943 | 15x15 EVK | |
+| `evk-imx943-am` | i.MX943 | Antmicro DC-SCM | NOR-flash (JFFS2) image variant |
 | `frdm-imx95` | i.MX95 | 15x15 FRDM | |
-| `evb-imx95-evk` | i.MX95 | 19x19 EVK | |
-| `evb-imx95-evk-nor` | i.MX95 | 19x19 EVK | NOR-flash (JFFS2) image variant |
-| `latu-dcsm-imx95` | i.MX95 | 19x19 LATU DC-SCM | Uses a dedicated kernel branch |
+| `evk-imx95` | i.MX95 | 19x19 EVK | |
+| `evk-imx95-nor` | i.MX95 | 19x19 EVK | NOR-flash (JFFS2) image variant |
+| `latu-dcsm-imx95` | i.MX95 | 19x19 LATU DC-SCM | NOR-flash (JFFS2) image variant |
 
 Machine definitions are under:
 ```
 meta-nxp/meta-frdm-imx91/conf/machine/
 meta-nxp/meta-frdm-imx93/conf/machine/
-meta-nxp/meta-evb-imx943/conf/machine/
-meta-nxp/meta-evb-imx943-am/conf/machine/
+meta-nxp/meta-evk-imx943/conf/machine/
+meta-nxp/meta-evk-imx943-am/conf/machine/
 meta-nxp/meta-frdm-imx95/conf/machine/
-meta-nxp/meta-evb-imx95-evk/conf/machine/
+meta-nxp/meta-evk-imx95/conf/machine/
 meta-nxp/meta-latu-dcsm-imx95/conf/machine/
 ```
 
@@ -143,7 +143,7 @@ cd meta-nxp && git checkout wrynose
 Set up build environment for selected machine:
 ```bash
 . setup frdm-imx93
-# or: frdm-imx91 / evb-imx943 / evb-imx943-am / frdm-imx95 / evb-imx95-evk
+# or: frdm-imx91 / evk-imx943 / evk-imx943-am / frdm-imx95 / evk-imx95
 ```
 
 Build the image:
@@ -375,13 +375,44 @@ both built from the `bmc_mailbox` repo (source centralized in
 Both install on all builds (internal and external). The OBMF USB/ICP packages
 (`obmf-driver`, `obmf-bmc-apps`) remain internal-only.
 
-### Running against real FPGA hardware
+### Choosing hardware or simulator mode (`hw` module parameter)
 
-The driver binds automatically when the board's device tree contains the
-mailbox node and the matching `*-mailbox-mock.dtbo` overlay is applied. Once
-loaded, the FPGA sensors appear like any other hwmon/I2C device:
+There is a **single module binary** carrying every transport backend (real SPI,
+in-kernel mock, and the userspace `mock_server` relay). Which one is used is
+chosen at **module load time**, not at build time:
+
+| Load command | Mode |
+|---|---|
+| `modprobe imx9-qspi-mailbox` | `hw=0` (**default**) - userspace mock relay, with the in-kernel mock answering whenever no `mock_server` is connected. Needs no FPGA and no DC-SCM hardware. |
+| `modprobe imx9-qspi-mailbox hw=1` | Real MachXO5-T FPGA over SPI. No relay device is created. |
 
 ```bash
+cat /sys/module/imx9_qspi_mailbox/parameters/hw   # which mode is active
+dmesg | grep -i 'using .* transport'              # logged once at probe
+```
+
+`hw` is read-only at runtime, because the transport and the relay device are
+bound during probe - switch modes by reloading the module. To make a board
+default to real hardware, ship a modprobe.d entry rather than rebuilding:
+
+```bash
+echo 'options imx9-qspi-mailbox hw=1' > /etc/modprobe.d/qspi-mailbox.conf
+```
+
+> **Migration note:** this replaces the old build-time switches
+> `CONFIG_IMX9_QSPI_MB_USPACE` / `CONFIG_IMX9_QSPI_MB_MOCK`, which no longer
+> exist. Anything still passing them (a `.bbappend`, a local `EXTRA_OEMAKE`) is
+> now a silent no-op and should be dropped. Production boards must pass `hw=1`,
+> since the default is the simulator.
+
+### Running against real FPGA hardware
+
+Load the module with `hw=1`. It binds automatically when the board's device tree
+contains the mailbox node and the matching `*-mailbox-mock.dtbo` overlay is
+applied. Once loaded, the FPGA sensors appear like any other hwmon/I2C device:
+
+```bash
+modprobe imx9-qspi-mailbox hw=1
 lsmod | grep imx9_qspi_mailbox
 sensors                                   # FPGA-backed temps, voltages, fans
 i2cdetect -y -r 20                        # a virtual FPGA I2C bus
@@ -393,10 +424,9 @@ No `mock_server` is needed in this mode - the driver talks to the real FPGA.
 
 ### Running without hardware (the simulator)
 
-For bench/CI use the kernel is built with the userspace relay transport
-(`CONFIG_IMX9_QSPI_MB_USPACE=y`), and `mock_server` answers the driver's mailbox
-requests over `/dev/qspi-mb-sim<N>`. On the image it is started automatically by
-`mock-server.service`; to run it by hand:
+This is the default mode (`hw=0`), so no argument is needed: `mock_server`
+answers the driver's mailbox requests over `/dev/qspi-mb-sim<N>`. On the image
+it is started automatically by `mock-server.service`; to run it by hand:
 
 ```bash
 systemctl status mock-server           # the packaged service
@@ -425,10 +455,10 @@ events, and the D-Bus / Redfish verification steps in full.
 meta-common/           Shared BSP code (meta-imx-bsp)
 meta-frdm-imx91/       Machine config: i.MX91 FRDM
 meta-frdm-imx93/       Machine config: i.MX93 FRDM
-meta-evb-imx943/       Machine config: i.MX943 EVK
-meta-evb-imx943-am/    Machine config: i.MX943 Antmicro DC-SCM
+meta-evk-imx943/       Machine config: i.MX943 EVK
+meta-evk-imx943-am/    Machine config: i.MX943 Antmicro DC-SCM
 meta-frdm-imx95/       Machine config: i.MX95 15x15 FRDM
-meta-evb-imx95-evk/    Machine config: i.MX95 19x19 EVK
+meta-evk-imx95/    Machine config: i.MX95 19x19 EVK
 meta-imx91/            SoC-specific recipes: i.MX91
 meta-imx93/            SoC-specific recipes: i.MX93
 meta-imx943/           SoC-specific recipes: i.MX943

@@ -5,8 +5,8 @@ IMAGE_INSTALL:append = " mock-server qspi-mailbox"
 IMAGE_INSTALL:append = " ${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', 'obmf-driver obmf-bmc-apps', '', d)}"
 IMAGE_INSTALL:append = " dpu-drm-app"
 
-# NOR flash image type for evb-imx95-evk-nor machine
+# NOR flash image type for evk-imx95-nor machine
 inherit image_types_nor
-IMAGE_FSTYPES:evb-imx95-evk-nor = "jffs2 norflash"
-EXTRA_IMAGECMD:jffs2:evb-imx95-evk-nor = "--pad --no-cleanmarkers --eraseblock=0x10000"
+IMAGE_FSTYPES:evk-imx95-nor = "jffs2 norflash"
+EXTRA_IMAGECMD:jffs2:evk-imx95-nor = "--pad --no-cleanmarkers --eraseblock=0x10000"
 IMAGE_INSTALL:append = " usb-hid-forwarder"

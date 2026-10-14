@@ -36,21 +36,21 @@ do_deploy:append() {
 }
 
 # -----------------------------------------------------------------
-# NOR flash (fspi) overrides for evb-imx95-evk-nor machine
+# NOR flash (fspi) overrides for evk-imx95-nor machine
 # -----------------------------------------------------------------
-FILESEXTRAPATHS:prepend:evb-imx95-evk-nor := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:evk-imx95-nor := "${THISDIR}/files:"
 
 # Use the NOR-specific boot environment when building for NOR
-UBOOT_ENV:evb-imx95-evk-nor = "custom-bmc-env-nor"
+UBOOT_ENV:evk-imx95-nor = "custom-bmc-env-nor"
 
 # Stage the NOR env file and FlexSPI defconfig fragment
-SRC_URI:append:evb-imx95-evk-nor = " file://fspi/custom-bmc-env-nor.cmd"
-SRC_URI:append:evb-imx95-evk-nor = " file://fspi/defconfig-fragment.cfg"
+SRC_URI:append:evk-imx95-nor = " file://fspi/custom-bmc-env-nor.cmd"
+SRC_URI:append:evk-imx95-nor = " file://fspi/defconfig-fragment.cfg"
 
 UBOOT_CONFIG_FRAGMENTS:fspi += "defconfig-fragment.cfg"
 
 # Copy the NOR env into the build directory after unpack
-do_copy_custom_env:append:evb-imx95-evk-nor() {
+do_copy_custom_env:append:evk-imx95-nor() {
   src="${UNPACKDIR}/fspi/custom-bmc-env-nor.cmd"
   if [ -f "${src}" ]; then
     install -m 0644 "${src}" "${B}/custom-bmc-env-nor.cmd"

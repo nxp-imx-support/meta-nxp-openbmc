@@ -459,4 +459,4 @@ addtask deploy before do_build after do_compile
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 FILES:${PN} = "/boot"
 
-COMPATIBLE_MACHINE = "(frdm-imx91|frdm-imx93|evb-imx943|mx8-generic-bsp|mx9-generic-bsp)"
+COMPATIBLE_MACHINE = "(frdm-imx91|frdm-imx93|evk-imx943|mx8-generic-bsp|mx9-generic-bsp)"

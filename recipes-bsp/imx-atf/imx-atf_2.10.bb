@@ -65,4 +65,4 @@ do_deploy() {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-COMPATIBLE_MACHINE = "(frdm-imx93|evb-imx943|frdm-imx95|mx9-generic-bsp)"
+COMPATIBLE_MACHINE = "(frdm-imx93|evk-imx943|frdm-imx95|mx9-generic-bsp)"

@@ -51,8 +51,8 @@ OPENBMC_IMX943_IMX95_CFG = "file://openbmc_imx943_imx95.cfg"
 # Apply the OpenBMC config fragments via MACHINE override. No kernel patches.
 SRC_URI:append:frdm-imx91     = " ${OPENBMC_COMMON_CFG}"
 SRC_URI:append:frdm-imx93     = " ${OPENBMC_COMMON_CFG}"
-SRC_URI:append:evb-imx943    = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
-SRC_URI:append:evb-imx943-am = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
+SRC_URI:append:evk-imx943    = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
+SRC_URI:append:evk-imx943-am = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
 SRC_URI:append:frdm-imx95     = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
-SRC_URI:append:evb-imx95-evk = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
+SRC_URI:append:evk-imx95 = " ${OPENBMC_COMMON_CFG} ${OPENBMC_IMX943_IMX95_CFG}"
 

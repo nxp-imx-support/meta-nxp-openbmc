@@ -15,7 +15,7 @@ SRCBRANCH = "master"
 SRCREV:latu-dcsm-imx95 = "eec232878ab7dd460f5a8f3767d39dc7e9412efa"
 
 # The DC-SCM patch series lives in the shared meta-nxp root layer so that both
-# latu-dcsm-imx95 and evb-imx943-am can apply it (the series is cumulative and
+# latu-dcsm-imx95 and evk-imx943-am can apply it (the series is cumulative and
 # covers both boards). Prepend it so BitBake finds these patches before the
 # base layer's files/.
 FILESEXTRAPATHS:prepend := "${THISDIR}/../../../recipes-bsp/imx-system-manager/files:"

@@ -16,7 +16,7 @@ SRCREV:latu-dcsm-imx95 = "bb41975aeb4cbd153b49c9fd62da1d64cd65968d"
 
 # latu-dcsm-imx95 env/defconfig files stay local to this layer; the DC-SCM
 # u-boot patch series lives in the shared meta-nxp root layer so that both
-# latu-dcsm-imx95 and evb-imx943-am can apply it.
+# latu-dcsm-imx95 and evk-imx943-am can apply it.
 FILESEXTRAPATHS:prepend:latu-dcsm-imx95 := "${THISDIR}/files/latu-dcsm-imx95:${THISDIR}/files/latu-dcsm-imx95/nor:"
 FILESEXTRAPATHS:prepend := "${THISDIR}/../../../recipes-bsp/u-boot/files/dcscm-patches:"
 
