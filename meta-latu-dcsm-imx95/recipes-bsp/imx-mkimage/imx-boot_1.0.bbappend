@@ -9,7 +9,10 @@ LATU_USE_CUSTOM_SRC ?= "1"
 # When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
 IMX_MKIMAGE_SRC = "git://github.com/nxp-imx/imx-mkimage.git;protocol=https"
 SRCBRANCH = "lf-6.18.2_1.0.0"
-SRCREV = "c0debd7c0b4a125bd3ca66bc68f1915882b2bb62"
+# Scoped to this machine: a bare SRCREV in a %.bbappend applies to every
+# machine built from a build dir that includes this layer, which would
+# silently pin their sources to this board's commit.
+SRCREV:latu-dcsm-imx95 = "c0debd7c0b4a125bd3ca66bc68f1915882b2bb62"
 
 MKIMAGE_EXTRA_ARGS:append:latu-dcsm-imx95 = "${@ ' QSPI_HEADER=./scripts/fspi_header_MX66U1G45G' if d.getVar('LATU_USE_CUSTOM_SRC') == '1' else ' QSPI_HEADER=./scripts/fspi_header_133'}"
 
@@ -28,8 +31,11 @@ do_deploy:append:latu-dcsm-imx95() {
            "${DEPLOYDIR}/imx-boot"
 }
 
-# Prepend our layer's files/ so BitBake finds our patches before the base layer's files/.
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# The DC-SCM patch series lives in the shared meta-nxp root layer so that both
+# latu-dcsm-imx95 and evb-imx943-am can apply it (the series is cumulative and
+# covers both boards). Prepend it so BitBake finds these patches before the
+# base layer's files/.
+FILESEXTRAPATHS:prepend := "${THISDIR}/../../../recipes-bsp/imx-mkimage/files:"
 
 SRC_URI:append = "${@' \
     file://0001-iMX94-Update-fast-hash-support-for-A1.patch \

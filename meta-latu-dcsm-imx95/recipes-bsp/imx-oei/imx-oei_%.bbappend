@@ -9,7 +9,10 @@ LATU_USE_CUSTOM_SRC ?= "1"
 # When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
 IMX_OEI_SRC = "git://github.com/nxp-imx/imx-oei.git;protocol=https"
 SRCBRANCH = "master"
-SRCREV = "9aea3350e643da86081c9dfaf3a6e1a84a583bfd"
+# Scoped to this machine: a bare SRCREV in a %.bbappend applies to every
+# machine built from a build dir that includes this layer, which would
+# silently pin their sources to this board's commit.
+SRCREV:latu-dcsm-imx95 = "9aea3350e643da86081c9dfaf3a6e1a84a583bfd"
 
 # Prepend our layer's files/ so BitBake finds our patches before the base layer's files/.
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"

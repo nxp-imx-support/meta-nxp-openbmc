@@ -30,7 +30,19 @@ BB_DISKMON_DIRS ??= "\
     HALT,/tmp,10M,1K"
 CONF_VERSION = "2"
 
-UBOOT_CONFIG = "fspi"
+# NOTE: do not set UBOOT_CONFIG here.
+#
+# This file used to carry UBOOT_CONFIG = "fspi", which broke the build:
+# i.MX943 defines only the "sd" and "xspi" UBOOT_CONFIG flags (see
+# conf/machine/include/imx943-evk.inc), so "fspi" resolves to no defconfig,
+# imx-boot is skipped, and the image fails with
+#   ERROR: Nothing PROVIDES 'imx-boot'
+#   imx-boot was skipped: The selected UBOOT_CONFIG key fspi has no match
+#                         in dict_keys(['sd', 'xspi'])
+# "fspi" is the i.MX95 spelling of the serial-NOR config and does exist for
+# that SoC; on i.MX943 the equivalent is "xspi", which
+# conf/machine/evb-imx943-am.conf already appends itself. Leave the machine
+# conf in charge of it.
 
 # Changes for reducing rootfs.
 

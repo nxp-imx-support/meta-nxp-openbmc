@@ -9,11 +9,16 @@ LATU_USE_CUSTOM_SRC ?= "1"
 # When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
 UBOOT_SRC = "git://github.com/nxp-imx/uboot-imx.git;protocol=https"
 SRCBRANCH = "lf_v2026.04"
-SRCREV = "bb41975aeb4cbd153b49c9fd62da1d64cd65968d"
+# Scoped to this machine: a bare SRCREV in a %.bbappend applies to every
+# machine built from a build dir that includes this layer, which would
+# silently pin their u-boot/SM to this board's commit.
+SRCREV:latu-dcsm-imx95 = "bb41975aeb4cbd153b49c9fd62da1d64cd65968d"
 
-# latu-dcsm-imx95 env/defconfig files + latu-patches/ for patch files.
+# latu-dcsm-imx95 env/defconfig files stay local to this layer; the DC-SCM
+# u-boot patch series lives in the shared meta-nxp root layer so that both
+# latu-dcsm-imx95 and evb-imx943-am can apply it.
 FILESEXTRAPATHS:prepend:latu-dcsm-imx95 := "${THISDIR}/files/latu-dcsm-imx95:${THISDIR}/files/latu-dcsm-imx95/nor:"
-FILESEXTRAPATHS:prepend := "${THISDIR}/files/latu-patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/../../../recipes-bsp/u-boot/files/dcscm-patches:"
 
 SRC_URI:append = "${@' \
     file://0001-arch-arm-dts-add-imx943-dc-scm-dtb-and-u-boot.dtsi.patch \

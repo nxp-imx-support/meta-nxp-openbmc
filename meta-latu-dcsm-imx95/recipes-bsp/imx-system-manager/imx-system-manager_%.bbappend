@@ -9,10 +9,16 @@ LATU_USE_CUSTOM_SRC ?= "1"
 # When LATU_USE_CUSTOM_SRC=1, LATU-specific patches are applied on top.
 IMX_SYSTEM_MANAGER_SRC = "git://github.com/nxp-imx/imx-sm.git;protocol=https"
 SRCBRANCH = "master"
-SRCREV = "eec232878ab7dd460f5a8f3767d39dc7e9412efa"
+# Scoped to this machine: a bare SRCREV in a %.bbappend applies to every
+# machine built from a build dir that includes this layer, which would
+# silently pin their u-boot/SM to this board's commit.
+SRCREV:latu-dcsm-imx95 = "eec232878ab7dd460f5a8f3767d39dc7e9412efa"
 
-# Prepend our layer's files/ so BitBake finds our patches before the base layer's files/.
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# The DC-SCM patch series lives in the shared meta-nxp root layer so that both
+# latu-dcsm-imx95 and evb-imx943-am can apply it (the series is cumulative and
+# covers both boards). Prepend it so BitBake finds these patches before the
+# base layer's files/.
+FILESEXTRAPATHS:prepend := "${THISDIR}/../../../recipes-bsp/imx-system-manager/files:"
 
 SRC_URI:append = "${@' \
     file://0001-Adds-LATU_DCSM-board-support.patch \
