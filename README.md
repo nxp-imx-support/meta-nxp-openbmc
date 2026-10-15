@@ -405,6 +405,49 @@ echo 'options imx9-qspi-mailbox hw=1' > /etc/modprobe.d/qspi-mailbox.conf
 > now a silent no-op and should be dropped. Production boards must pass `hw=1`,
 > since the default is the simulator.
 
+### Selecting a mailbox device tree (FRDM-IMX93)
+
+The driver only binds if the running device tree actually contains the
+`nxp,imx9-qspi-mailbox` node, so the right DTB has to be booted. The kernel
+assembles a pre-merged blob for this board (base + overlay, see
+`arch/arm64/boot/dts/freescale/Makefile`), and `frdm-imx93.conf` now lists it in
+`KERNEL_DEVICETREE` so it is built and lands in the FAT boot partition:
+
+| DTB | Contents |
+|---|---|
+| `imx93-11x11-frdm-bmc.dtb` | **default** - normal BMC boot, no mailbox node |
+| `imx93-11x11-frdm-mailbox-mock.dtb` | base + mailbox on FlexSPI1 CS1 (enables `flexspi1`), including the registers only `mock_server` implements |
+
+**On the naming:** `-mock` means the mailbox is answered by the *simulator*
+(`mock_server`, driver loaded with `hw=0`), not by a real MachXO5-T FPGA. Boards
+with no FPGA fitted - imx91/imx93 FRDM, imx943 DC-SCM, imx95 15x15 FRDM - only
+ship the `-mock` variant. Only the DC-SCM/LATU platforms, which have real FPGA
+hardware, additionally carry a plain `*-mailbox.dtb` for `hw=1`.
+
+Shipping it does **not** change how the board boots: `UBOOT_DTB_NAME` stays at
+`imx93-11x11-frdm-bmc.dtb`, so default BMC behaviour is untouched. It is
+opt-in - point U-Boot at it for a mailbox bring-up session:
+
+```bash
+# in U-Boot
+setenv fdtfile imx93-11x11-frdm-mailbox-mock.dtb
+saveenv && reset
+```
+
+Then confirm the node is actually live before blaming the driver:
+
+```bash
+ls /sys/class/spi_master/                     # must be non-empty
+ls /sys/bus/spi/drivers/imx9-qspi-mailbox/    # must list a spiN.N device,
+                                              # not just bind/unbind/module/uevent
+ls /dev/qspi-mb-sim*                          # relay node (numbered by chip-select)
+```
+
+If `insmod` is silent and prints nothing to `dmesg` even with `trace=1`, probe
+never ran: the booted DTB has no mailbox node. An unbound driver creates no
+relay device, which is why `mock_server` then reports
+`open(/dev/qspi-mb-sim0): No such file`.
+
 ### Running against real FPGA hardware
 
 Load the module with `hw=1`. It binds automatically when the board's device tree

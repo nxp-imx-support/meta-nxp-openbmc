@@ -1,8 +1,8 @@
 SUMMARY = "i.MX9 QSPI mailbox kernel driver (FPGA mailbox transport)"
 DESCRIPTION = "Out-of-tree kernel module that talks to the MachXO5 FPGA over \
 FlexSPI/QSPI and exposes the FPGA-backed subsystems (hwmon, virtual I2C/I3C, \
-GPIO, PWM, IIO, eSPI, PLDM). All transports are compiled in; load with hw=1 \
-for the real FPGA, or with no argument (hw=0) for the userspace mock relay."
+GPIO, PWM, IIO, eSPI, PLDM). All transports are compiled in; the default \
+(hw=1) drives the real FPGA, and hw=0 selects the userspace mock relay."
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
@@ -27,28 +27,12 @@ S = "${UNPACKDIR}/${BP}/kernel_driver/imx9-qspi-mailbox"
 
 # Driver configuration.
 #
-# These CONFIG_* symbols come from the driver's OWN Kconfig/Makefile, not from
-# the kernel .config: for an out-of-tree module the kernel never sources that
-# Kconfig, so nothing lands in autoconf.h. Passing them on the make command line
-# is the only way they take effect - the driver Makefile turns each one into a
-# -D on the compiler line. Putting them in a kernel .cfg fragment does nothing
-# (merge_config.sh drops unknown symbols).
+#   modprobe imx9-qspi-mailbox          -> hw=1 (default): real MachXO5-T FPGA
+#                                          over SPI.
+#   modprobe imx9-qspi-mailbox hw=0     -> userspace mock relay with in-kernel
+#                                          mock fallback; needs no FPGA and no
+#                                          DC-SCM hardware.
 #
-# NOTE: the transport is NO LONGER a build-time choice. All three backends
-# (real SPI, in-kernel mock, userspace mock_server relay) are always compiled
-# into the single module, and the active one is selected at module load time
-# via the "hw" module parameter:
-#
-#   modprobe imx9-qspi-mailbox          -> hw=0 (default): userspace mock relay
-#                                          with in-kernel mock fallback; needs
-#                                          no FPGA and no DC-SCM hardware.
-#   modprobe imx9-qspi-mailbox hw=1     -> real MachXO5-T FPGA over SPI.
-#
-# The former CONFIG_IMX9_QSPI_MB_USPACE=y line was therefore dropped: the
-# symbol no longer exists in the driver, so passing it would be a silent no-op.
-# To make a board default to real hardware, ship a modprobe.d entry with
-# "options imx9-qspi-mailbox hw=1" rather than rebuilding the module.
-
 # KCS/IPMI bridge: register the FPGA eSPI KCS register triplet with the kernel
 # KCS BMC framework so /dev/ipmi-kcs<N> appears for phosphor-ipmi-kcs / ipmid.
 #
