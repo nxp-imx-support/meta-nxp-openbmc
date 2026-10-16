@@ -3,6 +3,9 @@ IMAGE_INSTALL:append = " nxp-pci-gop"
 IMAGE_INSTALL:append = " mock-server qspi-mailbox"
 # OBMF is internal-only.
 IMAGE_INSTALL:append = " ${@bb.utils.contains('BMC_LINUX_USE_INTERNAL', '1', 'obmf-driver obmf-bmc-apps', '', d)}"
+# Do not install OBMF on evk-imx95-nor.
+IMAGE_INSTALL:remove:evk-imx95-nor = "obmf-driver obmf-bmc-apps"
+IMAGE_INSTALL:remove:latu-dcsm-imx95 = "obmf-driver obmf-bmc-apps"
 IMAGE_INSTALL:append = " dpu-drm-app"
 
 # NOR flash image type for evk-imx95-nor machine
