@@ -26,7 +26,7 @@ BMC_LINUX_SRC_GITHUB = "git://github.com/nxp-qoriq/linux.git;protocol=https"
 # Both the internal and public branches already carry all of the OpenBMC
 # downstream kernel changes, so the linux-nxp recipe applies no *.patch files
 # in either case - only the OpenBMC *.cfg defconfig fragments are added.
-BMC_LINUX_USE_INTERNAL ?= "0"
+BMC_LINUX_USE_INTERNAL ?= "1"
 
 BMC_LINUX_BRANCH_INTERNAL = "lf-6.18.y-bmc"
 BMC_LINUX_BRANCH_GITHUB = "lf-6.18.y-bmc"
