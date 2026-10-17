@@ -11,7 +11,7 @@
 #   dd if=<image>-<machine>.norflash of=/dev/mtd0 bs=4096
 #
 # Or via U-Boot over TFTP:
-#   tftp 0x80000000 obmc-phosphor-image-frdm-imx95-nor.norflash
+#   tftp 0x80000000 obmc-phosphor-image-evk-imx95-nor.norflash
 #   sf probe
 #   sf erase 0 <NOR_FLASH_SIZE>
 #   sf write 0x80000000 0 ${filesize}
